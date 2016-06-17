@@ -1,0 +1,9 @@
+---
+Name: quaff-config
+---
+Injector:
+  QuaffMapper:
+    class: QuaffArrayMapper
+QuaffModel:
+  extensions:
+    - QuaffMappableExtension

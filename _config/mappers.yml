@@ -1,0 +1,8 @@
+---
+Name: quaff-array-mapper-config
+After:
+  - '#quaff-config'
+---
+QuaffArrayMapper:
+  accept_types:
+    - 'application/json'
