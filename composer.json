@@ -1,0 +1,30 @@
+{
+	"name": "crackerjackdigital/silverstripe-quaff",
+	"type": "silverstripe-module",
+	"description": "API Access Module for SilverStripe",
+	"homepage": "http://github.com/crackerjackdigital",
+	"license": "BSD-3-Clause",
+	"keywords": [
+		"silverstripe",
+		"api"
+	],
+	"authors": [
+		{
+			"name": "Stephen Wake",
+			"homepage": "http://github.com/crackerjackdigital"
+		}
+	],
+	"require": {
+		"php": ">=5.5.0",
+		"composer/installers": "*",
+		"silverstripe/framework": "3.2.x",
+		"guzzlehttp/guzzle": "6.2.x"
+	},
+	"extra": {
+		"installer-paths": {
+			"quaff": [
+				"crackerjackdigital/silverstripe-quaff"
+			]
+		}
+	}
+}
