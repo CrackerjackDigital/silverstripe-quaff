@@ -21,10 +21,6 @@
 		"guzzlehttp/guzzle": "6.2.x"
 	},
 	"extra": {
-		"installer-paths": {
-			"quaff": [
-				"crackerjackdigital/silverstripe-quaff"
-			]
-		}
+		"installer-name": "quaff"
 	}
 }
