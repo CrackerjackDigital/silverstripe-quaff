@@ -17,7 +17,7 @@
 	"require": {
 		"php": ">=5.5.0",
 		"composer/installers": "*",
-		"silverstripe/framework": "3.2.x",
+		"silverstripe/framework": "3.3.x",
 		"guzzlehttp/guzzle": "6.2.x"
 	},
 	"extra": {
