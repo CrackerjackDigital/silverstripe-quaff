@@ -18,9 +18,16 @@
 		"php": ">=5.5.0",
 		"composer/installers": "*",
 		"silverstripe/framework": "3.3.x",
-		"guzzlehttp/guzzle": "6.2.x"
+		"guzzlehttp/guzzle": "6.2.x",
+		"crackerjackdigital/modular": "dev-master"
 	},
 	"extra": {
 		"installer-name": "quaff"
-	}
+	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/crackerjackdigital/modular"
+		}
+	]
 }
