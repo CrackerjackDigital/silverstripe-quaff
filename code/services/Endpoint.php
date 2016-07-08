@@ -7,7 +7,7 @@ abstract class QuaffEndpoint extends Object
 	const FormatValues = 2;
 	const FormatBoth   = 3;
 
-	/** @var  string the endpoint path e.g 'some-endpoint/get*/
+	/** @var  string the endpoint path e.g 'some-endpoint/get */
 	protected $path;
 
 	/** @var array endpoint information merged in constructor */
@@ -31,7 +31,6 @@ abstract class QuaffEndpoint extends Object
 	public function init() {
 		$this->extend('beforeQuaff');
 	}
-
 
 	/**
 	 * @param array                  $params
@@ -65,12 +64,12 @@ abstract class QuaffEndpoint extends Object
 	 */
 	protected function uri(array $params = [], $model = null) {
 		$url = $this->urlParams(
-				Controller::join_links(
-					$this->getBaseURL(),
-					$this->getURL()
-				),
-				$params
-			);
+			Controller::join_links(
+				$this->getBaseURL(),
+				$this->getURL()
+			),
+			$params
+		);
 
 		$queryParams = $this->queryParams($params, $model);
 
@@ -139,8 +138,6 @@ abstract class QuaffEndpoint extends Object
 		return $url . '?' . substr($query, 1);
 	}
 
-
-
 	/**
 	 * Overload in Endpoint implementation to return a suitable QuaffApiResponse derived object if not specified
 	 * in info.response for the endpoint.
@@ -156,6 +153,7 @@ abstract class QuaffEndpoint extends Object
 		}
 		return null;
 	}
+
 	/**
 	 * Returns the method suffix from the path, e.g. 'get' for 'some-endpoint/get'.
 	 *
@@ -203,6 +201,7 @@ abstract class QuaffEndpoint extends Object
 	public function getTransportClass() {
 		return $this->info('transport') ?: $this->config()->get('transport');
 	}
+
 	/**
 	 * Returns the path component without the method, e.g. 'some-endpoint' for 'some-endpoint/get'
 	 *
@@ -211,7 +210,6 @@ abstract class QuaffEndpoint extends Object
 	public function getURL() {
 		return $this->info('url');
 	}
-
 
 	/**
 	 * @return string
@@ -235,6 +233,6 @@ abstract class QuaffEndpoint extends Object
 	}
 
 	public function info($key) {
-		return isset($this->info[$key]) ? $this->info[$key] : null;
+		return isset($this->info[ $key ]) ? $this->info[ $key ] : null;
 	}
 }

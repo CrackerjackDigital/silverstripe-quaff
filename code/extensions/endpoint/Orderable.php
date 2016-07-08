@@ -30,11 +30,14 @@ class QuaffOrderableEndpointExtension extends ModularDataExtension {
 			: $existing->count()
 		);
 	}
+
 	public function afterQuaff($model, $items) {
 		$this->order = null;
 	}
+
 	/**
 	 * Return the current order, optionally and by default incrementing it.
+	 *
 	 * @param bool $increment
 	 * @return mixed
 	 */

@@ -8,7 +8,6 @@ class QuaffMappableExtension extends ModularDataExtension
 	use \Modular\config;
 	use \Modular\bitfield;
 
-
 	/**
 	 * Import from $data into object for the $endpoint, does not write the model.
 	 *
@@ -87,7 +86,7 @@ class QuaffMappableExtension extends ModularDataExtension
 
 		foreach ($map as $remotePath => $localPath) {
 			$fieldInfo = self::decode_map($localPath, $remotePath);;
-			$newMap[$localPath] = $fieldInfo;
+			$newMap[ $localPath ] = $fieldInfo;
 		}
 
 		$this->owner()->extend('quaffUpdateMap', $newMap, $endpoint, $options);
@@ -100,7 +99,6 @@ class QuaffMappableExtension extends ModularDataExtension
 			$this->owner()->$fieldName = $value;
 		}
 	}
-
 
 	/**
 	 * Given local and remote paths for mapping decompose into an array usefull during the mapping process.
@@ -140,7 +138,7 @@ class QuaffMappableExtension extends ModularDataExtension
 			$foreignKey,
 			$tagField,
 			$method,
-		    $relationship
+			$relationship,
 		];
 	}
 

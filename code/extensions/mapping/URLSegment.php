@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Adds a 'URLSegment' method to extended object
  */

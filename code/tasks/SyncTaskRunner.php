@@ -4,6 +4,7 @@ class QuaffSyncTaskRunner extends TaskRunner {
 
 	/**
 	 * Overload to allow TaskName=all to run all tasks
+	 *
 	 * @param SS_HTTPRequest $request
 	 */
 	public function runTask($request) {
@@ -35,6 +36,7 @@ class QuaffSyncTaskRunner extends TaskRunner {
 
 		$message(sprintf('The build task "%s" could not be found', Convert::raw2xml($name)));
 	}
+
 	/**
 	 * @return array Array of associative arrays for each task (Keys: 'class', 'title', 'description')
 	 */
@@ -45,17 +47,17 @@ class QuaffSyncTaskRunner extends TaskRunner {
 		// remove the base class
 		array_shift($taskClasses);
 
-		if($taskClasses) {
+		if ($taskClasses) {
 			$reorder = array();
 
 			/** @var QuaffSyncTask $class */
 			foreach ($taskClasses as $class) {
-				$reorder[singleton($class)->sequence($reorder)] = $class;
+				$reorder[ singleton($class)->sequence($reorder) ] = $class;
 			}
 			ksort($reorder);
 
-			foreach($reorder as $class) {
-				if(!singleton($class)->isEnabled()) {
+			foreach ($reorder as $class) {
+				if (!singleton($class)->isEnabled()) {
 					continue;
 				}
 
@@ -64,9 +66,9 @@ class QuaffSyncTaskRunner extends TaskRunner {
 					: singleton($class)->getDescription();
 
 				$availableTasks[] = array(
-					'class' => $class,
-					'title' => singleton($class)->getTitle(),
-					'segment' => str_replace('\\', '-', $class),
+					'class'       => $class,
+					'title'       => singleton($class)->getTitle(),
+					'segment'     => str_replace('\\', '-', $class),
 					'description' => $desc,
 				);
 			}

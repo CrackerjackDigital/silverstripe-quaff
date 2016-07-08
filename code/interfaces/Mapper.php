@@ -5,12 +5,12 @@
  * such as the SilverStripe data model.
  */
 interface QuaffMapperInterface {
-	const OptionSkipNulls = 1;          // update missing api values to null
-	const OptionShallow = 2;            // don't import relationships if set
-	const OptionSkipTagFields = 4;      // don't import/decode tag fields
+	const OptionSkipNulls                   = 1;          // update missing api values to null
+	const OptionShallow                     = 2;            // don't import relationships if set
+	const OptionSkipTagFields               = 4;      // don't import/decode tag fields
 	const OptionRemoveObsoleteRelationships = 8;    // remove relationships
-	const OptionClearOneToMany = 16;
-	const OptionDeleteOneToMany = 48;  // delete implies clear so 32 | 16
+	const OptionClearOneToMany              = 16;
+	const OptionDeleteOneToMany             = 48;  // delete implies clear so 32 | 16
 
 	const DefaultMapMethodPrefix = 'quaff';
 
@@ -19,7 +19,6 @@ interface QuaffMapperInterface {
 	const DefaultPathDelimiter = '.';
 
 	const DefaultTagDelimiter = '|';
-
 
 	/**
 	 * Return an array of acceptTypes this mapper handles.

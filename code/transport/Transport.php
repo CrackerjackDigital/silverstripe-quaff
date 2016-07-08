@@ -2,8 +2,7 @@
 use \Modular\ModularObject as Object;
 
 abstract class QuaffTransport extends Object
-	implements QuaffTransportInterface
-{
+	implements QuaffTransportInterface {
 	/**
 	 * @param QuaffEndpoint $endpoint
 	 * @param array         $data

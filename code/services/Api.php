@@ -5,17 +5,15 @@ use \Modular\ModularObject as Object;
  * Provides an api where api calls can be configured and made.
  */
 abstract class QuaffApi extends Object
-	implements QuaffApiInterface, QuaffLocatorInterface
-{
+	implements QuaffApiInterface, QuaffLocatorInterface {
 	/** @var string use this accept type with requests if none defined in the info */
 	private static $accept_type = 'application/json';
 
-	/** @var string the name of a QuaffAuth derived class*/
+	/** @var string the name of a QuaffAuth derived class */
 	private static $auth_provider = 'QuaffAuthTypeBasic';
 
 	/** @var string the name of a QuaffTransport derived class */
 	private static $transport = 'QuaffTransportGuzzle';
-
 
 	private static $endpoints = [
 #   E.G.
@@ -89,7 +87,6 @@ abstract class QuaffApi extends Object
 		return $this->config()->get('service');
 	}
 
-
 	/**
 	 * Returns the configured endpoints for this api or empty array.
 	 *
@@ -113,6 +110,7 @@ abstract class QuaffApi extends Object
 		}
 		return null;
 	}
+
 	/**
 	 * @param $path
 	 * @return array|null
@@ -161,11 +159,11 @@ abstract class QuaffApi extends Object
 	 */
 	protected function decode_config(array $config, $dereferenceBase = false) {
 		$merged = [
-				'accept_type'    => static::config()->get('accept_type'),
-				'url'       => null,
-				'base'      => null,
-				'transport' => static::config()->get('transport'),
-			];
+			'accept_type' => static::config()->get('accept_type'),
+			'url'         => null,
+			'base'        => null,
+			'transport'   => static::config()->get('transport'),
+		];
 
 		if ($dereferenceBase && isset($config['base'])) {
 

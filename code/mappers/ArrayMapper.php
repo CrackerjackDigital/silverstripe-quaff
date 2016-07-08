@@ -189,7 +189,7 @@ class QuaffArrayMapper extends QuaffMapper {
 
 			if ((!$skipNulls) || array_key_exists($localName, $fromModelOrArray)) {
 
-				self::build($this, $path, $fromModelOrArray[$localName], $data);
+				self::build($this, $path, $fromModelOrArray[ $localName ], $data);
 
 			}
 		}
@@ -251,14 +251,14 @@ class QuaffArrayMapper extends QuaffMapper {
 
 			if (is_numeric($segment) || $method) {
 				// array index
-				if (isset($lastData[$segment])) {
-					$data = $lastData[$segment];
+				if (isset($lastData[ $segment ])) {
+					$data = $lastData[ $segment ];
 				}
 				$found = true;
 				break;
 
-			} elseif (isset($data[$segment])) {
-				$data = $data[$segment];
+			} elseif (isset($data[ $segment ])) {
+				$data = $data[ $segment ];
 				$parsed++;
 
 			} else {
@@ -289,14 +289,14 @@ class QuaffArrayMapper extends QuaffMapper {
 		$parsed = 1;
 
 		while ($part = array_shift($path)) {
-			if (!isset($data[$part])) {
+			if (!isset($data[ $part ])) {
 				if ($parsed === $pathLength) {
 
-					$data[$part] = $value;
+					$data[ $part ] = $value;
 
 				} elseif (!array_key_exists($part, $data)) {
 
-					$data[$part] = array();
+					$data[ $part ] = array();
 
 				}
 			}

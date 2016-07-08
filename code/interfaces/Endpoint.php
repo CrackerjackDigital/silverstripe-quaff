@@ -4,6 +4,7 @@ interface QuaffEndpointInterface {
 
 	/**
 	 * Prepare the endpoint to make calls if required (e.g. Authenticate etc).
+	 *
 	 * @return mixed
 	 */
 	public function init();
@@ -30,6 +31,7 @@ interface QuaffEndpointInterface {
 
 	/**
 	 * Return the class name of the 'root' model returned by this endpoint.
+	 *
 	 * @return mixed
 	 */
 	public function getModelClass();

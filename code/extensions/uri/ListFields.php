@@ -6,12 +6,14 @@ class QuaffListFieldsURIHelper extends QuaffURIHelper {
 	private static $fields_key = 'fields';
 
 	private static $fields_delimiter = ',';
+
 	/**
 	 * @return QuaffEndpointInterface|Object
 	 */
 	private function owner() {
 		return $this->owner;
 	}
+
 	/**
 	 * Encode model and options on the query string suitable for Arlo API.
 	 *
@@ -41,9 +43,9 @@ class QuaffListFieldsURIHelper extends QuaffURIHelper {
 				)
 			);
 			if ($fieldNames) {
-				$params[(string)static::get_config_setting('fields_key')] =
+				$params[ (string) static::get_config_setting('fields_key') ] =
 					implode(
-						(string)static::get_config_setting('fields_delimiter'),
+						(string) static::get_config_setting('fields_delimiter'),
 						$fieldNames
 					);
 			}

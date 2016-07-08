@@ -2,8 +2,7 @@
 use \Modular\ModularObject as Object;
 
 abstract class QuaffMapper extends Object
-    implements QuaffMapperInterface, QuaffLocatorInterface
-{
+	implements QuaffMapperInterface, QuaffLocatorInterface {
 
 	// set this so all method's to call on model for value resolution  are prefixed by this,
 	// e.g. 'quaff' for 'quaffURLSegment' if method is 'URLSegment'
@@ -12,7 +11,6 @@ abstract class QuaffMapper extends Object
 	private static $path_delimiter = self::DefaultPathDelimiter;
 
 	private static $tag_delimiter = self::DefaultTagDelimiter;
-
 
 	/** @var  QuaffEndpointInterface */
 	protected $endpoint;
@@ -54,6 +52,7 @@ abstract class QuaffMapper extends Object
 
 	/**
 	 * Tests if the provided acceptType is in the array of acceptTypes.
+	 *
 	 * @param $acceptType
 	 * @return bool
 	 */
@@ -62,11 +61,12 @@ abstract class QuaffMapper extends Object
 	}
 
 	public function acceptTypes() {
-        return $this->config()->get('accept_types') ?: [];
-    }
+		return $this->config()->get('accept_types') ?: [];
+	}
 
 	/**
 	 * Convenience.
+	 *
 	 * @return string
 	 */
 	public static function path_delimiter() {
@@ -75,6 +75,7 @@ abstract class QuaffMapper extends Object
 
 	/**
 	 * Convenience.
+	 *
 	 * @return string
 	 */
 	public static function tag_delimiter() {

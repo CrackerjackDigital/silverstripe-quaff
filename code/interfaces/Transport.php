@@ -1,6 +1,5 @@
 <?php
 
-
 interface QuaffTransportInterface {
 	/**
 	 * @param string $uri

@@ -1,15 +1,16 @@
 <?php
+
 /**
  * Very simple request class which wraps an api.
  */
 class QuaffAPIRequest extends Object {
-    /** @var QuaffEndpointInterface */
-    protected $endpoint;
+	/** @var QuaffEndpointInterface */
+	protected $endpoint;
 
-    /** @var QuaffMappableInterface */
-    protected $model;
+	/** @var QuaffMappableInterface */
+	protected $model;
 
-	/** @var array  */
+	/** @var array */
 	protected $extraData;
 
 	/**
@@ -17,19 +18,22 @@ class QuaffAPIRequest extends Object {
 	 * @param QuaffMappableExtension|QuaffMappableInterface $model
 	 * @param array                                         $extraData
 	 */
-    public function __construct(QuaffEndpointInterface $endpoint, QuaffMappableInterface $model, array $extraData = array()) {
-	    parent::__construct();
+	public function __construct(QuaffEndpointInterface $endpoint, QuaffMappableInterface $model, array $extraData = array()) {
+		parent::__construct();
 
-        $this->endpoint = $endpoint;
-	    $this->model = $model;
-	    $this->extraData = $extraData;
-    }
+		$this->endpoint = $endpoint;
+		$this->model = $model;
+		$this->extraData = $extraData;
+	}
+
 	public function getEndpoint() {
 		return $this->endpoint;
 	}
+
 	public function getModel() {
 		return $this->model;
 	}
+
 	public function getExtraData() {
 		return $this->extraData;
 	}

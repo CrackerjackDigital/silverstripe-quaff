@@ -2,8 +2,7 @@
 use Guzzle\Http\Client;
 use Guzzle\Http\Message\Response;
 
-class QuaffTransportGuzzle extends QuaffTransport
-{
+class QuaffTransportGuzzle extends QuaffTransport {
 	const ContentTypeJSON     = 'application/json';
 	const ContentTypeXML      = 'application/xml';
 	const ResponseDecodeOK    = 'ok';
@@ -122,6 +121,7 @@ class QuaffTransportGuzzle extends QuaffTransport
 
 	/**
 	 * Check if a returned response code (e.g. 200) matches the expectation (e.g. DecodeResponseOK)
+	 *
 	 * @param $fromResponse
 	 * @param $toExpected
 	 * @return bool true response code matches expected, false otherwise
@@ -130,7 +130,7 @@ class QuaffTransportGuzzle extends QuaffTransport
 	 */
 	protected static function match_response_code($fromResponse, $toExpected) {
 		$decode = static::config()->get('response_code_decode') ?: [];
-		$res = (bool)count(
+		$res = (bool) count(
 			$filtered = array_filter(
 				$mapped = array_map(
 					function ($pattern, $outcome) use ($fromResponse, $toExpected) {
