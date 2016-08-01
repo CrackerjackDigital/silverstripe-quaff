@@ -208,7 +208,7 @@ abstract class QuaffAPIResponse extends Object {
 	 * ArrayAccess implementation
 	 *
 	 * @param mixed $offset
-	 * @return
+	 * @return mixed
 	 * @throws QuaffException
 	 */
 	public function offsetGet($offset) {

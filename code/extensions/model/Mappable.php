@@ -1,4 +1,4 @@
-<?php
+yes<?php
 
 /**
  * Extends a model to add mapping between it's fieldMap and api data
@@ -35,32 +35,6 @@ class QuaffMappableExtension extends ModularDataExtension
 	}
 
 	/**
-	 * TODO move to spout module
-	 *
-	 * Opposite of quaff, exports this object as a json suitable array.
-	 *
-	 * @param QuaffEndpointInterface $endpoint
-	 * @param int                    $options or'd self::OptionABC options
-	 * @return array
-	 */
-	/*
-	public function spout(QuaffEndpointInterface $endpoint, $options = self::DefaultSpoutOptions) {
-		$data = [];
-
-		if ($mapper = QuaffMapper::locate($endpoint)) {
-
-			$this->owner()->extend('beforeSpout', $mapper, $data);
-
-			$data = $mapper->spout($this->owner(), $this->quaffMapForEndpoint($endpoint), true);
-
-			$this->owner()->extend('afterSpout', $mapper, $data);
-
-		}
-		return $data;
-	}
-	*/
-
-	/**
 	 * @return DataObject
 	 */
 	public function owner() {
@@ -76,17 +50,23 @@ class QuaffMappableExtension extends ModularDataExtension
 	}
 
 	public function quaffMapForEndpoint(QuaffEndpointInterface $endpoint, $options = self::MapDeep) {
-		$map = $this->get_config_setting(
-			'quaff_map',
-			$endpoint->getPath(),
-			$this->owner()->class
-		) ?: [];
+		$maps = $this->owner()->config()->get('quaff_map');
+		$path = $endpoint->getPath();
+		$map = [];
 
+		foreach ($maps as $match => $map) {
+			if (QuaffEndpoint::match($match, $path)) {
+				break;
+			}
+			$map = [];
+		}
 		$newMap = [];
 
-		foreach ($map as $remotePath => $localPath) {
-			$fieldInfo = self::decode_map($localPath, $remotePath);;
-			$newMap[ $localPath ] = $fieldInfo;
+		if ($map) {
+			foreach ($map as $remotePath => $localPath) {
+				$fieldInfo = self::decode_map($localPath, $remotePath);;
+				$newMap[ $localPath ] = $fieldInfo;
+			}
 		}
 
 		$this->owner()->extend('quaffUpdateMap', $newMap, $endpoint, $options);

@@ -7,6 +7,12 @@ abstract class QuaffEndpoint extends Object
 	const FormatValues = 2;
 	const FormatBoth   = 3;
 
+	// override in concrete instance to give the class of the model returned by this endpoint
+	const ModelClass = '';
+
+	// override in concrete instance to give the class of the response returned by this endpoint
+	const ResponseClass = '';
+
 	/** @var  string the endpoint path e.g 'some-endpoint/get */
 	protected $path;
 
@@ -20,7 +26,7 @@ abstract class QuaffEndpoint extends Object
 
 	public function __construct($path, array $info) {
 		$this->path = $path;
-		$this->info += $info;
+		$this->info = $info;
 
 		parent::__construct();
 	}
@@ -139,6 +145,18 @@ abstract class QuaffEndpoint extends Object
 	}
 
 	/**
+	 * Return a new instance of the model class returned from this endpoint with optional data set.
+	 * @param array $initData
+	 * @return DataObject|null
+	 */
+	protected function makeModel($initData = []) {
+		if ($modelClass = $this->getModelClass()) {
+			return Injector::inst()->create($modelClass, $initData);
+		}
+		return null;
+	}
+
+	/**
 	 * Overload in Endpoint implementation to return a suitable QuaffApiResponse derived object if not specified
 	 * in info.response for the endpoint.
 	 *
@@ -146,7 +164,7 @@ abstract class QuaffEndpoint extends Object
 	 * @return QuaffAPIResponse|null
 	 */
 	protected function makeResponse($apiData) {
-		if ($responseClass = $this->info('response')) {
+		if ($responseClass = $this->getResponseClass()) {
 
 			$response = Injector::inst()->create($responseClass, $this, $apiData);
 			return $response;
@@ -185,7 +203,11 @@ abstract class QuaffEndpoint extends Object
 	}
 
 	public function getModelClass() {
-		return $this->info('model');
+		return $this->info('model') ?: static::ModelClass;
+	}
+
+	public function getResponseClass() {
+		return $this->info('response') ?: static::ResponseClass;
 	}
 
 	/**

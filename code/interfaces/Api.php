@@ -33,6 +33,15 @@ interface QuaffApiInterface {
 	public function endpoint($path);
 
 	/**
+	 * Return a configured endpoint for a model and action.
+	 *
+	 * @param $modelClass
+	 * @param $action
+	 * @return QuaffEndpoint
+	 */
+	public function endpointForModel($modelClass, $action);
+
+	/**
 	 * Find and return config for an endpoint.
 	 *
 	 * @param $path

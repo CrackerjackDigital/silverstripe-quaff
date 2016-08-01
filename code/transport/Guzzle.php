@@ -1,6 +1,6 @@
 <?php
-use Guzzle\Http\Client;
-use Guzzle\Http\Message\Response;
+use GuzzleHttp\Client as Client;
+use GuzzleHttp\Psr7\Response as Response;
 
 class QuaffTransportGuzzle extends QuaffTransport {
 	const ContentTypeJSON     = 'application/json';
@@ -35,7 +35,6 @@ class QuaffTransportGuzzle extends QuaffTransport {
 			$this->options($options)
 		);
 		$this->client = new Client(
-			'',
 			$options
 		);
 	}
@@ -54,12 +53,12 @@ class QuaffTransportGuzzle extends QuaffTransport {
 			/** @var Response $response */
 			$response = $this->client->get(
 				$uri
-			)->send();
+			);
 
 			self::debugging(
 				ModularDebugger::DebugFile | ModularDebugger::DebugTrace,
 				'sync'
-			)->trace($response->getBody(true), __FUNCTION__);
+			)->trace($response->getBody(), __FUNCTION__);
 
 			return $this->formatResponse($response);
 
@@ -97,7 +96,7 @@ class QuaffTransportGuzzle extends QuaffTransport {
 	protected function formatResponse(Response $response) {
 		if ($this->isError($response)) {
 
-			return new QuaffAPIErrorResponse($this->endpoint, [
+			return new QuaffApiErrorResponse($this->endpoint, [
 				'Code'    => $response->getStatusCode(),
 				'Message' => $response->getMessage(),
 				'URI'     => $response->getEffectiveUrl(),

@@ -3,7 +3,7 @@
 interface QuaffEndpointInterface {
 
 	/**
-	 * Prepare the endpoint to make calls if required (e.g. Authenticate etc).
+	 * Prepare the endpoint to make calls if required (e.g. Authenticate).
 	 *
 	 * @return mixed
 	 */

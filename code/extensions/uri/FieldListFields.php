@@ -1,6 +1,10 @@
 <?php
 
-class QuaffListFieldsURIHelper extends QuaffURIHelper {
+/**
+ * Adds a list of fields from the model to the query parameters.
+ * e.g fields=id,title,name
+ */
+class QuaffFieldListQueryHelper extends QuaffURIHelper {
 	use \Modular\config;
 
 	private static $fields_key = 'fields';
