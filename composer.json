@@ -18,7 +18,7 @@
 		"php": ">=5.5",
 		"composer/installers": "*",
 		"silverstripe/framework": ">=3.1",
-		"guzzlehttp/guzzle": "6.2.x",
+		"guzzlehttp/guzzle": "5.x",
 		"crackerjackdigital/silverstripe-modular": "dev-develop"
 	},
 	"extra": {
