@@ -1,4 +1,4 @@
-yes<?php
+<?php
 
 /**
  * Extends a model to add mapping between it's fieldMap and api data

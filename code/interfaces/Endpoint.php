@@ -23,6 +23,15 @@ interface QuaffEndpointInterface {
 	public function auth();
 
 	/**
+	 * @param array|null $data
+	 * @param null       $flags
+	 * @return DataObject|QuaffModelInterface
+	 */
+	public function newModel(array $data = null, $flags = null);
+
+	public function newResponse($apiData);
+
+	/**
 	 * Return the 'info' for the endpoint, generally an array.
 	 *
 	 * @return mixed

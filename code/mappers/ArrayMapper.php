@@ -17,7 +17,7 @@ class QuaffArrayMapper extends QuaffMapper {
 	 * @return int - number of fields found for mapping
 	 * @throws QuaffMappingException
 	 */
-	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = self::DefaultQuaffOptions) {
+	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = self::DefaultOptions) {
 		$fromData = $this->decode($fromData);
 		$numFound = 0;
 
@@ -46,7 +46,7 @@ class QuaffArrayMapper extends QuaffMapper {
 	 * @throws ValidationException
 	 * @throws null
 	 */
-	protected function found($value, DataObject $toModel, $fieldInfo, $options = self::DefaultQuaffOptions) {
+	protected function found($value, DataObject $toModel, $fieldInfo, $options = self::DefaultOptions) {
 		list($localPath, $remotePath, $foreignKey, $isTagField, $method, $relationship) = $fieldInfo;
 
 		$delimiter = static::path_delimiter();

@@ -14,7 +14,7 @@ interface QuaffMapperInterface {
 
 	const DefaultMapMethodPrefix = 'quaff';
 
-	const DefaultQuaffOptions = self::OptionDeleteOneToMany;
+	const DefaultOptions = self::OptionDeleteOneToMany;
 
 	const DefaultPathDelimiter = '.';
 
@@ -34,7 +34,7 @@ interface QuaffMapperInterface {
 	 * @param int        $options
 	 * @return mixed
 	 */
-	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = self::DefaultQuaffOptions);
+	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = self::DefaultOptions);
 
 	/**
 	 * @param DataObject|array $fromModelOrArray

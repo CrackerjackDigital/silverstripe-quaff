@@ -56,7 +56,7 @@ abstract class QuaffEndpoint extends Object
 			$this->uri($params, $model)
 		);
 
-		return $this->makeResponse(
+		return $this->newResponse(
 			$response
 		);
 	}
@@ -149,7 +149,7 @@ abstract class QuaffEndpoint extends Object
 	 * @param array $initData
 	 * @return DataObject|null
 	 */
-	protected function makeModel($initData = []) {
+	public function newModel(array $initData = null, $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
 			return Injector::inst()->create($modelClass, $initData);
 		}
@@ -163,11 +163,9 @@ abstract class QuaffEndpoint extends Object
 	 * @param $apiData - raw data from the api call result, e.g. array from json
 	 * @return QuaffAPIResponse|null
 	 */
-	protected function makeResponse($apiData) {
+	public function newResponse($apiData) {
 		if ($responseClass = $this->getResponseClass()) {
-
-			$response = Injector::inst()->create($responseClass, $this, $apiData);
-			return $response;
+			return Injector::inst()->create($responseClass, $this, $apiData);
 		}
 		return null;
 	}

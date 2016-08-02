@@ -95,27 +95,27 @@ class QuaffTransportGuzzle extends QuaffTransport {
 	 */
 	protected function formatResponse(Response $response) {
 		if ($this->isError($response)) {
-
 			return new QuaffApiErrorResponse($this->endpoint, [
 				'Code'    => $response->getStatusCode(),
-				'Message' => $response->getMessage(),
-				'URI'     => $response->getEffectiveUrl(),
+				'Message' => $response->getReasonPhrase(),
+			    'Response' => $response
 			]);
 		}
-		if (!static::match_content_type($response->getContentType(), $this->endpoint->getAcceptType())) {
-			throw new QuaffTransportException("Bad response content type '" . $response->getContentType() . "'");
+
+		$responseContentType = $response->getHeader('Content-Type');
+		$acceptType = $this->endpoint->getAcceptType();
+
+		if (!static::match_content_type($responseContentType, $acceptType)) {
+			throw new QuaffTransportException("Bad response content type '$responseContentType', requested '$acceptType'");
 		}
 		switch ($this->endpoint->getAcceptType()) {
 		case self::ContentTypeJSON:
-			$method = 'json';
-			break;
+			return $this->json($response->getBody());
 		case self::ContentTypeXML:
-			$method = 'xml';
-			break;
+			return $this->xml($response->getBody());
 		default:
 			throw new QuaffTransportException("Can only handle json or xml at the moment");
 		}
-		return $response->$method();
 	}
 
 	/**
@@ -150,12 +150,18 @@ class QuaffTransportGuzzle extends QuaffTransport {
 	 * Content types may have character encoding so just do a rude find of the expected content type in the response
 	 * content type.
 	 *
-	 * @param $fromResponse
-	 * @param $toExpected
+	 * @param array|string $contentType
+	 * @param $expected
 	 * @return bool true if matches, false otherwise
 	 */
-	protected static function match_content_type($fromResponse, $toExpected) {
-		return false !== strpos(strtolower($fromResponse), strtolower($toExpected));
+	protected static function match_content_type($contentType, $expected) {
+		$contentTypes = is_array($contentType) ? $contentType : [ $contentType ];
+		foreach ($contentTypes as $contentType) {
+			if (false !== strpos(strtolower($contentType), strtolower($expected))) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

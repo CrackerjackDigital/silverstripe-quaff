@@ -15,9 +15,6 @@ interface QuaffMappableInterface extends QuaffModelInterface {
 	const MapDeep          = 64;
 	const MapOwnFieldsOnly = 128;
 
-	const DefaultQuaffOptions = 72; // self::DecodeNone | self::MapDeep
-	const DefaultSpoutOptions = 72; // self::DecodeNone | self::MapDeep
-
 	/**
 	 * From DataObject but we use it so declare it
 	 *
@@ -33,16 +30,6 @@ interface QuaffMappableInterface extends QuaffModelInterface {
 	 * @return
 	 */
 	public function quaffMapForEndpoint(QuaffEndpointInterface $endpoint, $options = self::MapDeep);
-
-	/**
-	 * Import data to the model for the endpoint.
-	 *
-	 * @param QuaffEndpointInterface $endpoint such as 'get/online-activities'
-	 * @param array                  $data     to be imported via the map found for the endpoint
-	 * @param int                    $options
-	 * @return mixed
-	 */
-	public function quaff(QuaffEndpointInterface $endpoint, $data, $options = self::DefaultQuaffOptions);
 
 	/**
 	 * TODO move to spout module

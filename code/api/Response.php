@@ -23,6 +23,52 @@ abstract class QuaffAPIResponse extends Object {
 	}
 
 	/**
+	 * Return returned version string or null if not found in response.
+	 *
+	 * @return string|null
+	 */
+	abstract public function getResponseVersion();
+
+	/**
+	 * Check if the request was invalid, e.g. bad/missing parameters but we got something back from API.
+	 *
+	 * For HTTP errors an exception will be thrown when the request is made instead as maybe config or remote endpoint
+	 * wrong or not available at the moment but probably not recoverable.
+	 *
+	 * If this returns true then getNativeCode should return the API error result code if there is one,
+	 * and getMessage should return the error message if there is one.
+	 *
+	 * @return boolean
+	 *      true if request failed (bad url, invalid parameters passed etc)
+	 *      false if something returned (maybe empty though)
+	 */
+	abstract public function isError();
+
+	/**
+	 * Return the number of items returned (maybe one for a single model), 0 if none or null if not found.
+	 *
+	 * @return integer|null
+	 */
+	abstract public function getItemCount();
+
+	/**
+	 * Return the start index from he api call if provided, e.g. for pagination, or null if not found.
+	 *
+	 * @return integer|null
+	 */
+	abstract public function getStartIndex();
+
+	/**
+	 * Return the items returned by the request as a list.
+	 *
+	 * @param int $options
+	 * @return SS_List
+	 */
+	public function getItems($options = QuaffMapper::DefaultOptions) {
+		return $this->items($this->data(), $options);
+	}
+
+	/**
 	 * Return list of Models populated from the provided list of raw items.
 	 *
 	 * Items are either existing found using 'findModel' or new models via 'makeModel'
@@ -32,7 +78,7 @@ abstract class QuaffAPIResponse extends Object {
 	 * @param                    $flags
 	 * @return \ArrayList
 	 */
-	public function items($items, $flags) {
+	protected function items($items, $flags = null) {
 		$models = new ArrayList();
 
 		if ($this->isValid()) {
@@ -40,8 +86,9 @@ abstract class QuaffAPIResponse extends Object {
 			$endpoint = $this->getEndpoint();
 
 			foreach ($items as $item) {
+				/** QuaffModelInterface */
 				if (!$model = $this->findModel($item, $flags)) {
-					$model = $this->createModel($item, $flags);
+					$model = $endpoint->newModel($item, $flags);
 				}
 				// call this directly instead of extend.
 				$model->quaff($endpoint, $item, $flags);
@@ -54,19 +101,14 @@ abstract class QuaffAPIResponse extends Object {
 	}
 
 	/**
-	 * Overload in Endpoint implementation to return a suitable QuaffModel to use as template for fields etc. By default
-	 * no loading of data to the new model is performed here.
+	 * Call through to Endpoint, allow overload here. Returns a new model optionally initialised with passed data.
 	 *
 	 * @param array $data
 	 * @param int   $flags
 	 * @return QuaffMappableInterface
 	 */
-	protected function createModel(array $data, $flags) {
-		if (!$modelClass = $this->modelClass()) {
-			return null;
-		}
-		/** @var QuaffMappableExtension $model */
-		return Injector::inst()->create($modelClass);
+	protected function newModel(array $data = null, $flags = null) {
+		return $this->getEndpoint()->newModel($data);
 	}
 
 	/**
@@ -75,19 +117,10 @@ abstract class QuaffAPIResponse extends Object {
 	 *
 	 * @param array $data
 	 * @param       $flags
-	 * @return DataObject|null
+	 * @return DataObject|QuaffModelInterface|null
 	 */
 	protected function findModel(array $data, $flags) {
 		return null;
-	}
-
-	/**
-	 * Returns the class of the model to create for the response, ie via makeModel.
-	 *
-	 * @return mixed
-	 */
-	public function modelClass() {
-		return $this->endpoint->info('model');
 	}
 
 	/**
@@ -132,28 +165,6 @@ abstract class QuaffAPIResponse extends Object {
 	}
 
 	/**
-	 * Return returned version string or null if not found in response.
-	 *
-	 * @return string|null
-	 */
-	abstract public function getResponseVersion();
-
-	/**
-	 * Check if the request was invalid, e.g. bad/missing parameters but we got something back from API.
-	 *
-	 * For HTTP errors an exception will be thrown when the request is made instead as maybe config or remote endpoint
-	 * wrong or not available at the moment but probably not recoverable.
-	 *
-	 * If this returns true then getNativeCode should return the API error result code if there is one,
-	 * and getMessage should return the error message if there is one.
-	 *
-	 * @return boolean
-	 *      true if request failed (bad url, invalid parameters passed etc)
-	 *      false if something returned (maybe empty though)
-	 */
-	abstract public function isError();
-
-	/**
 	 * Call from inherited classes for basic validity checks before specific ones.
 	 * Initially just returns the opposite of isError.
 	 *
@@ -173,19 +184,6 @@ abstract class QuaffAPIResponse extends Object {
 		return $this->data;
 	}
 
-	/**
-	 * Return the number of items returned (maybe one for a single model), 0 if none or null if not found.
-	 *
-	 * @return integer|null
-	 */
-	abstract public function getItemCount();
-
-	/**
-	 * Return the start index from he api call if provided, e.g. for pagination, or null if not found.
-	 *
-	 * @return integer|null
-	 */
-	abstract public function getStartIndex();
 
 	/**
 	 * (PHP 5 &gt;= 5.0.0)<br/>
