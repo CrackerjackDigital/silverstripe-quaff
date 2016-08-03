@@ -1,13 +1,19 @@
 <?php
 
-namespace Quaff;
+namespace Quaff\Tasks;
+
+use ClassInfo;
+use Convert;
+use Director;
+use Injector;
+use TaskRunner;
 
 class SyncTaskRunner extends TaskRunner {
 
 	/**
 	 * Overload to allow TaskName=all to run all tasks
 	 *
-	 * @param SS_HTTPRequest $request
+	 * @param \SS_HTTPRequest $request
 	 */
 	public function runTask($request) {
 		$name = $request->param('TaskName');
@@ -52,7 +58,7 @@ class SyncTaskRunner extends TaskRunner {
 		if ($taskClasses) {
 			$reorder = array();
 
-			/** @var QuaffSyncTask $class */
+			/** @var SyncTask $class */
 			foreach ($taskClasses as $class) {
 				$reorder[ singleton($class)->sequence($reorder) ] = $class;
 			}

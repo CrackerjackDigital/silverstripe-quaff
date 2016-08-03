@@ -1,8 +1,18 @@
 <?php
 
-namespace Quaff;
+namespace Quaff\Transport;
 
-class TransportGuzzle extends QuaffTransport {
+use Modular\debugging;
+use Quaff\Endpoint;
+use GuzzleHttp\Client;
+use Quaff\Exceptions\Exception;
+use Quaff\Exceptions\Transport;
+use Quaff\Responses\Response;
+use Modular\Helpers\Debugger;
+
+class Guzzle extends Transport {
+	use debugging;
+
 	const ContentTypeJSON     = 'application/json';
 	const ContentTypeXML      = 'application/xml';
 	const ResponseDecodeOK    = 'ok';
@@ -16,7 +26,7 @@ class TransportGuzzle extends QuaffTransport {
 		'5*' => self::ResponseDecodeError,
 	];
 
-	/** @var QuaffEndpoint */
+	/** @var Endpoint */
 	protected $endpoint;
 
 	/** @var Client */
@@ -24,7 +34,7 @@ class TransportGuzzle extends QuaffTransport {
 
 	protected $options = [];
 
-	public function __construct(QuaffEndpoint $endpoint, array $options = []) {
+	public function __construct(Endpoint $endpoint, array $options = []) {
 		parent::__construct();
 		$this->endpoint = $endpoint;
 		$this->options($options);
@@ -45,8 +55,8 @@ class TransportGuzzle extends QuaffTransport {
 
 	/**
 	 * @param array $uri
-	 * @return array|SimpleXMLElement
-	 * @throws QuaffException
+	 * @return array|\SimpleXMLElement
+	 * @throws Exception
 	 */
 	public function get($uri) {
 		try {
@@ -55,19 +65,17 @@ class TransportGuzzle extends QuaffTransport {
 				$uri
 			);
 
-			self::debugging(
-				Debugger::DebugFile | Debugger::DebugTrace,
-				'sync'
-			)->trace($response->getBody(), __FUNCTION__);
+			self::log_message('sync', Debugger::DebugInfo);
+			self::log_message($response->getBody(), Debugger::DebugTrace);
 
 			return $this->formatResponse($response);
 
-		} catch (QuaffTransportException $e) {
+		} catch (Transport $e) {
 			// rethrow it
 			throw $e;
 
 		} catch (Exception $e) {
-			throw new QuaffTransportException($e->getMessage(), $e->getCode(), $e);
+			throw new Transport($e->getMessage(), $e->getCode(), $e);
 		}
 	}
 
@@ -90,8 +98,8 @@ class TransportGuzzle extends QuaffTransport {
 	 * error back from the api call.
 	 *
 	 * @param Response $response
-	 * @return array|SimpleXMLElement
-	 * @throws QuaffException
+	 * @return array|\SimpleXMLElement
+	 * @throws Exception
 	 */
 	protected function formatResponse(Response $response) {
 		if ($this->isError($response)) {
@@ -106,7 +114,7 @@ class TransportGuzzle extends QuaffTransport {
 		$acceptType = $this->endpoint->getAcceptType();
 
 		if (!static::match_content_type($responseContentType, $acceptType)) {
-			throw new QuaffTransportException("Bad response content type '$responseContentType', requested '$acceptType'");
+			throw new Transport("Bad response content type '$responseContentType', requested '$acceptType'");
 		}
 		switch ($this->endpoint->getAcceptType()) {
 		case self::ContentTypeJSON:
@@ -114,7 +122,7 @@ class TransportGuzzle extends QuaffTransport {
 		case self::ContentTypeXML:
 			return $this->xml($response->getBody());
 		default:
-			throw new QuaffTransportException("Can only handle json or xml at the moment");
+			throw new Transport("Can only handle json or xml at the moment");
 		}
 	}
 

@@ -1,13 +1,13 @@
 <?php
 namespace Quaff;
 
+use ClassInfo;
+use Injector;
 use Modular\Object;
 use Quaff\Exceptions\Exception;
 use Quaff\Interfaces\Endpoint;
-use Quaff\Interfaces\Mapper as MapperInterface;
 use Quaff\Interfaces\Locator as LocatorInterface;
-use ClassInfo;
-use Injector;
+use Quaff\Interfaces\Mapper as MapperInterface;
 
 abstract class Mapper extends Object
 	implements MapperInterface, LocatorInterface

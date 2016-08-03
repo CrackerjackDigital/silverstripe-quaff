@@ -1,16 +1,22 @@
 <?php
+namespace Quaff\Transport;
 
-abstract namespace Quaff;
+use Modular\Object;
+use Quaff\Endpoint;
+use Quaff\Interfaces\Transport as TransportInterface;
+use Quaff\Exceptions\Transport as Exception;
+use Injector;
+use DOMDocument;
 
-class Transport extends Object
-	implements QuaffTransportInterface {
+abstract class Transport extends Object
+	implements TransportInterface {
 	/**
-	 * @param QuaffEndpoint $endpoint
+	 * @param Endpoint $endpoint
 	 * @param array         $data
 	 * @param array         $options
-	 * @return QuaffTransportInterface
+	 * @return TransportInterface
 	 */
-	public static function factory(QuaffEndpoint $endpoint, array $data = [], array $options = []) {
+	public static function factory(Endpoint $endpoint, array $data = [], array $options = []) {
 		$transportClass = $endpoint->getTransportClass();
 
 		return Injector::inst()->create($transportClass, $endpoint, $data, $options);
@@ -20,12 +26,12 @@ class Transport extends Object
 	 * Return provided text as json.
 	 * @param $bodyText
 	 * @return mixed
-	 * @throws \QuaffTransportException
+	 * @throws Exception
 	 */
 	public function json($bodyText) {
 		$json = json_decode($bodyText, true);
 		if (json_last_error()) {
-			throw new QuaffTransportException(json_last_error_msg());
+			throw new Exception(json_last_error_msg());
 		}
 		return $json;
 	}
@@ -35,7 +41,7 @@ class Transport extends Object
 	 *
 	 * @param $bodyText
 	 * @return \DOMDocument
-	 * @throws \QuaffTransportException
+	 * @throws Exception
 	 */
 	public function xml($bodyText) {
 		libxml_use_internal_errors(true);
@@ -45,7 +51,7 @@ class Transport extends Object
 		$doc->loadXML($bodyText);
 
 		if ($error = libxml_get_last_error()) {
-			throw new QuaffTransportException($error->message);
+			throw new Exception($error->message);
 		}
 		return $doc;
 	}

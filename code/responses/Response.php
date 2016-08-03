@@ -2,6 +2,7 @@
 namespace Quaff\Responses;
 
 use ArrayList;
+use Modular\NotImplementedException;
 use Modular\Object;
 use Quaff\Exceptions\Exception;
 use Quaff\Interfaces\Endpoint;
@@ -112,7 +113,7 @@ abstract class Response extends Object {
 	 *
 	 * @param array $data
 	 * @param int   $flags
-	 * @return QuaffMappableInterface
+	 * @return \Quaff\Interfaces\Mapper
 	 */
 	protected function newModel(array $data = null, $flags = null) {
 		return $this->getEndpoint()->newModel($data);
@@ -124,14 +125,15 @@ abstract class Response extends Object {
 	 *
 	 * @param array $data
 	 * @param       $flags
-	 * @return DataObject|QuaffModelInterface|null
+	 * @return \DataObject|null
+	 * @throws \Modular\NotImplementedException
 	 */
 	protected function findModel(array $data, $flags) {
-		return null;
+		throw new NotImplementedException("Please provide implementation in concrete class");
 	}
 
 	/**
-	 * @return QuaffEndpointInterface|Object
+	 * @return Endpoint|Object
 	 */
 	public function getEndpoint() {
 		return $this->endpoint;

@@ -1,9 +1,19 @@
 <?php
 
-abstract namespace Quaff;
+namespace Quaff;
 
-class Endpoint extends Object
-	implements QuaffEndpointInterface {
+use Modular\Model;
+use Modular\Object;
+use Quaff\Interfaces\Mappable;
+use Quaff\Responses\Response;
+use Quaff\Transport\Transport;
+use Quaff\Interfaces\Transport as TransportInterface;
+use Quaff\Interfaces\Endpoint as EndpointInterface;
+use Modular\Controller;
+use Injector;
+
+abstract class Endpoint extends Object implements EndpointInterface
+{
 	const FormatKeys   = 1;
 	const FormatValues = 2;
 	const FormatBoth   = 3;
@@ -41,18 +51,18 @@ class Endpoint extends Object
 
 	/**
 	 * @param array                  $params
-	 * @param QuaffMappableInterface $model
-	 * @return array|SimpleXMLElement
+	 * @param Mappable $model
+	 * @return array|\SimpleXMLElement
 	 * @api
 	 */
 	public function quaff(array $params = [], $model = null) {
-		/** @var QuaffTransportInterface $transport */
-		$transport = QuaffTransport::factory(
+		/** @var TransportInterface $transport */
+		$transport = Transport::factory(
 			$this,
 			$params
 		);
 
-		/** @var QuaffApiResponse $response */
+		/** @var Response $response */
 		$response = $transport->get(
 			$this->uri($params, $model)
 		);
@@ -66,7 +76,7 @@ class Endpoint extends Object
 	 * Return full url including any query parameters
 	 *
 	 * @param array                       $params additional query string parameters
-	 * @param QuaffMappableInterface|null $model
+	 * @param Mappable|null $model
 	 * @return string
 	 */
 	protected function uri(array $params = [], $model = null) {
@@ -87,7 +97,7 @@ class Endpoint extends Object
 	 * Returns an array of query string segments in preference of config.params.get, model fields then params.
 	 *
 	 * @param array                                  $params
-	 * @param QuaffMappableInterface|DataObject|null $model if not supplied getModelClass singleton will be used
+	 * @param Mappable|Model|null $model if not supplied getModelClass singleton will be used
 	 * @return array
 	 */
 	protected function queryParams(array $params = [], $model = null) {
@@ -107,7 +117,7 @@ class Endpoint extends Object
 						array_keys(
 							$model->quaffMapForEndpoint(
 								$this,
-								QuaffMappableInterface::MapOwnFieldsOnly
+								Mappable::MapOwnFieldsOnly
 							)
 						)
 					)
@@ -148,7 +158,7 @@ class Endpoint extends Object
 	/**
 	 * Return a new instance of the model class returned from this endpoint with optional data set.
 	 * @param array $initData
-	 * @return DataObject|null
+	 * @return Model|null
 	 */
 	public function newModel(array $initData = null, $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
@@ -162,7 +172,7 @@ class Endpoint extends Object
 	 * in info.response for the endpoint.
 	 *
 	 * @param $apiData - raw data from the api call result, e.g. array from json
-	 * @return QuaffAPIResponse|null
+	 * @return Response|null
 	 */
 	public function newResponse($apiData) {
 		if ($responseClass = $this->getResponseClass()) {
