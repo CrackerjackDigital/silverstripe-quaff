@@ -1,37 +1,37 @@
 <?php
+namespace Quaff;
+
+use Modular\config;
+use Modular\owned;
+use Quaff\Interfaces\Mappable;
 
 /**
  * Adds a list of fields from the model to the query parameters.
  * e.g fields=id,title,name
  */
-class QuaffFieldListQueryHelper extends QuaffURIHelper {
-	use Modular\config;
+
+class FieldListQueryHelper extends URIHelper {
+	use config;
+	use owned;
 
 	private static $fields_key = 'fields';
 
 	private static $fields_delimiter = ',';
 
 	/**
-	 * @return QuaffEndpointInterface|Object
-	 */
-	private function owner() {
-		return $this->owner;
-	}
-
-	/**
 	 * Encode model and options on the query string suitable for Arlo API.
 	 *
 	 * - adds fields=field1,field2 parameter
 	 *
-	 * @param QuaffMappableInterface|DataObject|null $model
+	 * @param Mappable|\DataObject|null $model
 	 * @param array                                  $params
 	 * @return array
 	 */
 	public function updateQueryParameters(&$params, $model) {
 		if ($model) {
-			$delimiter = QuaffMapper::path_delimiter();
+			$delimiter = Mapper::path_delimiter();
 
-			$map = $model->quaffMapForEndpoint($this->owner(), QuaffMappableInterface::MapOwnFieldsOnly);
+			$map = $model->quaffMapForEndpoint($this->owner(), Mappable::MapOwnFieldsOnly);
 
 			/* map out the 'api' fields which exist in a remote relationship and return
 			   first part of the 'field' e.g. 'Description' for 'Description.Text' so request

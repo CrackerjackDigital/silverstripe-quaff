@@ -1,10 +1,11 @@
 <?php
+namespace Quaff\Interfaces;
 
 /**
  * Interface to add to DataObjects which support Quaff mapping. This is not declared directly on models as it is
  * implemented by QuaffMappableExtension , however is useful to use as a return type or parameter type hint.
  */
-interface QuaffMappableInterface extends QuaffModelInterface {
+interface Mappable extends Model {
 	const EncodeNone = 1;       // don't change values
 	const EncodeJSON = 2;       // encode values for json
 	const EncodeURL  = 4;        // encode values using urlencode
@@ -25,11 +26,11 @@ interface QuaffMappableInterface extends QuaffModelInterface {
 	/**
 	 * Returns the map for a given endpoint.
 	 *
-	 * @param QuaffEndpointInterface $endpoint
+	 * @param Endpoint $endpoint
 	 * @param int                    $options
 	 * @return
 	 */
-	public function quaffMapForEndpoint(QuaffEndpointInterface $endpoint, $options = self::MapDeep);
+	public function quaffMapForEndpoint(Endpoint $endpoint, $options = self::MapDeep);
 
 	/**
 	 * TODO move to spout module

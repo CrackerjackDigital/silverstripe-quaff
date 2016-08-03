@@ -1,7 +1,8 @@
 <?php
-use Modular\Object;
 
-abstract class QuaffEndpoint extends Object
+abstract namespace Quaff;
+
+class Endpoint extends Object
 	implements QuaffEndpointInterface {
 	const FormatKeys   = 1;
 	const FormatValues = 2;

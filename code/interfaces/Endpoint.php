@@ -1,6 +1,7 @@
 <?php
+namespace Quaff\Interfaces;
 
-interface QuaffEndpointInterface {
+interface Endpoint {
 
 	/**
 	 * Prepare the endpoint to make calls if required (e.g. Authenticate).

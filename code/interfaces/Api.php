@@ -1,21 +1,22 @@
 <?php
+namespace Quaff\Interfaces;
 
 /**
  * Interface used by locator to match and endpoint to a field map for a model.
  *
  * @api
  */
-interface QuaffApiInterface {
+interface Api {
 
 	/**
 	 *
 	 *
-	 * @param QuaffEndpointInterface      $endpoint
+	 * @param Endpoint      $endpoint
 	 * @param array                       $params
-	 * @param QuaffMappableInterface|null $model force model if provided, otherwise will be figured out.
-	 * @return QuaffAPIResponse
+	 * @param Mappable|null $model force model if provided, otherwise will be figured out.
+	 * @return Response
 	 */
-	public function quaff(QuaffEndpointInterface $endpoint, array $params = [], $model = null);
+	public function quaff(Endpoint $endpoint, array $params = [], $model = null);
 
 	/**
 	 * Return all the endpoints handled by this api.

@@ -3,7 +3,9 @@
 /**
  * Adds a 'URLSegment' method to extended object
  */
-class QuaffURLSegmentMapHelper extends QuaffMapHelper {
+namespace Quaff;
+
+class URLSegmentMapHelper extends MapHelper {
 	/**
 	 * Filter method called by traverse and build.
 	 *

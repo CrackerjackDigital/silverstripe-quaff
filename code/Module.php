@@ -1,6 +1,6 @@
 <?php
-use Modular\Module;
+namespace Quaff;
 
-class QuaffModule extends Module {
+class Module extends \Modular\Module {
 
 }

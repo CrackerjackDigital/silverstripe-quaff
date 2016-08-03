@@ -1,9 +1,16 @@
 <?php
+namespace Quaff;
+
+use DataObject;
+use Quaff\Exceptions\Mapping;
+use Quaff\Interfaces\Mappable;
+use Quaff\Interfaces\Mapper as MapperInterface;
+use ValidationException;
 
 /**
  * Maps between SilverStripe model and arrays.
  */
-class QuaffArrayMapper extends QuaffMapper {
+class ArrayMapper extends Mapper {
 	private static $accept_types = [];
 
 	/**
@@ -15,7 +22,7 @@ class QuaffArrayMapper extends QuaffMapper {
 	 * @param array        $fieldMap
 	 * @param int          $options bitfield of or'd self::OptionXYZ flags
 	 * @return int - number of fields found for mapping
-	 * @throws QuaffMappingException
+	 * @throws Mapping
 	 */
 	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = self::DefaultOptions) {
 		$fromData = $this->decode($fromData);
@@ -39,10 +46,10 @@ class QuaffArrayMapper extends QuaffMapper {
 	 * A value was found so map it to the DataObject.
 	 *
 	 * @param                           $value
-	 * @param DataObject|QuaffMapHelper $toModel
+	 * @param DataObject|MapHelper      $toModel
 	 * @param                           $fieldInfo
 	 * @param  int                      $options bitfield of or'd self::OptionXYZ flags
-	 * @throws QuaffMappingException
+	 * @throws Mapping
 	 * @throws ValidationException
 	 * @throws null
 	 */
@@ -91,7 +98,7 @@ class QuaffArrayMapper extends QuaffMapper {
 					foreach ($value as $foreignData) {
 						// add a new foreign model to this one.
 
-						/** @var DataObject|QuaffMappableInterface $foreignModel */
+						/** @var DataObject|Mappable $foreignModel */
 						$foreignModel = new $relatedClass();
 						$foreignModel->quaff($this->endpoint, $foreignData, $options);
 						$foreignModel->write(true);
@@ -198,10 +205,6 @@ class QuaffArrayMapper extends QuaffMapper {
 
 	}
 
-	private function parseRelationship($name) {
-		return explode('.', $name);
-	}
-
 	/**
 	 * Given an array just returns it otherwise returns json_decode's data.
 	 *
@@ -230,13 +233,13 @@ class QuaffArrayMapper extends QuaffMapper {
 	 * Traverse the array data with a path like 'item.summary.title' in $data and return the value found at the end, if
 	 * any.
 	 *
-	 * @param QuaffMapper $mapper
-	 * @param array       $fieldInfo
-	 * @param array       $data
-	 * @param bool        $found - set to true if found, false otherwise
+	 * @param MapperInterface $mapper
+	 * @param array           $fieldInfo
+	 * @param array           $data
+	 * @param bool            $found - set to true if found, false otherwise
 	 * @return array|string|null
 	 */
-	public static function traverse(QuaffMapper $mapper, array $fieldInfo, array $data, &$found = false) {
+	public static function traverse(MapperInterface $mapper, array $fieldInfo, array $data, &$found = false) {
 		list($localPath, $remotePath, $foreignKey, $isTagField, $method, $relationship) = $fieldInfo;
 
 		$segments = explode(self::path_delimiter(), $remotePath);
@@ -274,13 +277,13 @@ class QuaffArrayMapper extends QuaffMapper {
 	/**
 	 * Add a value to $data at path specified by $path.
 	 *
-	 * @param QuaffMapper  $mapper
-	 * @param array|string $path
-	 * @param              $value
-	 * @param array        $data
+	 * @param MapperInterface $mapper
+	 * @param array|string    $path
+	 * @param                 $value
+	 * @param array           $data
 	 * @return mixed|void
 	 */
-	public static function build(QuaffMapper $mapper, $path, $value, array &$data) {
+	public static function build(MapperInterface $mapper, $path, $value, array &$data) {
 		if (!is_array($path)) {
 			$path = explode(static::path_delimiter(), $path);
 		}

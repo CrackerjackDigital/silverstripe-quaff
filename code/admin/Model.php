@@ -1,5 +1,7 @@
 <?php
 
-class QuaffModelAdmin extends ModelAdmin {
-	
+namespace Quaff;
+
+class ModelAdmin extends \ModelAdmin {
+
 }

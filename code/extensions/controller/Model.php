@@ -1,7 +1,9 @@
 <?php
+namespace Quaff;
+
 use Modular\ModelExtension;
 
-class QuaffModelControllerExtension extends ModelExtension {
+class ModelControllerExtension extends ModelExtension {
 
 	/**
 	 * Get extra statics from other extensions on owner via quaffStatics extension method and calling quaffStatic

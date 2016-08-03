@@ -1,12 +1,16 @@
 <?php
-use Modular\ModelExtension;
-
 /**
  * Adds a column to track the ordering of the model according to the order it was imported from the API.
  * QuaffOrderableExtension
  */
-class QuaffOrderableEndpointExtension extends ModelExtension {
-	use Modular\enabler;
+namespace Quaff;
+
+use Modular\enabler;
+use Modular\Model;
+use Modular\ModelExtension;
+
+class OrderableEndpointExtension extends ModelExtension {
+	use enabler;
 
 	private $order;
 
@@ -15,11 +19,11 @@ class QuaffOrderableEndpointExtension extends ModelExtension {
 	 * or the number of existing models. Called when the a particular model is about to be imported from API.
 	 */
 	public function beforeQuaff($items) {
-		$existing = DataObject::get($this->owner()->getModelClass())
-			->sort(QuaffOrderableModelExtension::OrderFieldName, 'DESC');
+		$existing = Model::get($this->owner()->getModelClass())
+			->sort(OrderableModelExtension::OrderFieldName, 'DESC');
 
 		$this->setQuaffedOrder($existing->count()
-			? $existing->limit(1)->first()->{QuaffOrderableModelExtension::OrderFieldName}
+			? $existing->limit(1)->first()->{OrderableModelExtension::OrderFieldName}
 				?: 0
 			: $existing->count()
 		);

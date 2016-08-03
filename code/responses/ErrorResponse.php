@@ -1,6 +1,8 @@
 <?php
 
-class QuaffApiErrorResponse extends QuaffAPIResponse {
+namespace Quaff\Responses;
+
+class Error extends Response {
 
 	public function getResponseVersion() {
 		return $this->data('Version');

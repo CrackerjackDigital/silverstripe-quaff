@@ -1,6 +1,8 @@
 <?php
 
-class QuaffSyncTaskRunner extends TaskRunner {
+namespace Quaff;
+
+class SyncTaskRunner extends TaskRunner {
 
 	/**
 	 * Overload to allow TaskName=all to run all tasks

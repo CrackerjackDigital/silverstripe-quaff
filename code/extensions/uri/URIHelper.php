@@ -1,5 +1,8 @@
 <?php
+namespace Quaff;
 
-abstract class QuaffURIHelper extends Extension {
+use Extension;
+
+abstract class URIHelper extends Extension {
 
 }

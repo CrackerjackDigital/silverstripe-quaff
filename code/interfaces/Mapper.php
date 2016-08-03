@@ -1,10 +1,13 @@
 <?php
+namespace Quaff\Interfaces;
+
+use DataObject;
 
 /**
  * Interface for classes which provide mapping between api-native or neutral format and another representation,
  * such as the SilverStripe data model.
  */
-interface QuaffMapperInterface {
+interface Mapper {
 	const OptionSkipNulls                   = 1;          // update missing api values to null
 	const OptionShallow                     = 2;            // don't import relationships if set
 	const OptionSkipTagFields               = 4;      // don't import/decode tag fields
@@ -47,21 +50,21 @@ interface QuaffMapperInterface {
 	/**
 	 * Looks up $path in data and returns value (setting $found to true if so).
 	 *
-	 * @param QuaffMapper $mapper
-	 * @param array       $fieldInfo
-	 * @param bool        $found
+	 * @param Mapper $mapper
+	 * @param array  $fieldInfo
+	 * @param bool   $found
 	 * @return mixed
 	 */
-	public static function traverse(QuaffMapper $mapper, array $fieldInfo, array $data, &$found = false);
+	public static function traverse(Mapper $mapper, array $fieldInfo, array $data, &$found = false);
 
 	/**
 	 * Adds value to $data at $path.
 	 *
-	 * @param QuaffMapper $mapper
+	 * @param Mapper      $mapper
 	 * @param             $path
 	 * @param             $value
 	 * @param array       $data
 	 * @return mixed
 	 */
-	public static function build(QuaffMapper $mapper, $localName, $value, array &$data);
+	public static function build(Mapper $mapper, $localName, $value, array &$data);
 }

@@ -1,12 +1,17 @@
 <?php
-use Modular\ModelExtension;
 /**
  * Extends a model to add mapping between it's fieldMap and api data
  */
-class QuaffMappableExtension extends ModelExtension
-	implements QuaffMappableInterface {
-	use Modular\config;
-	use Modular\bitfield;
+namespace Quaff;
+
+use Modular\bitfield;
+use Modular\config;
+use Modular\ModelExtension;
+
+class MappableExtension extends ModelExtension
+	implements Map {
+	use config;
+	use bitfield;
 
 	/**
 	 * Import from $data into object for the $endpoint, does not write the model.

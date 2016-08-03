@@ -1,19 +1,25 @@
 <?php
-use Modular\Object;
+namespace Quaff\Responses;
 
-abstract class QuaffAPIResponse extends Object {
+use ArrayList;
+use Modular\Object;
+use Quaff\Exceptions\Exception;
+use Quaff\Interfaces\Endpoint;
+use Quaff\Mapper;
+
+abstract class Response extends Object {
 	const SimpleMatchKey = 'request';
 
 	const RawDataArray = 'array';
 
 	protected $data = array();
 
-	/** @var QuaffEndpointInterface */
+	/** @var Endpoint */
 	protected $endpoint = null;
 
 	private static $status_ok = 'OK';
 
-	public function __construct(QuaffEndpointInterface $endpoint, array $data = array()) {
+	public function __construct(Endpoint $endpoint, array $data = array()) {
 		$this->endpoint = $endpoint;
 		$this->data = $data;
 		parent::__construct();
@@ -65,7 +71,7 @@ abstract class QuaffAPIResponse extends Object {
 	 * @param int $options
 	 * @return SS_List
 	 */
-	public function getItems($options = QuaffMapper::DefaultOptions) {
+	public function getItems($options = Mapper::DefaultOptions) {
 		return $this->items($this->data(), $options);
 	}
 
@@ -208,11 +214,11 @@ abstract class QuaffAPIResponse extends Object {
 	 *
 	 * @param mixed $offset
 	 * @return mixed
-	 * @throws QuaffException
+	 * @throws Exception
 	 */
 	public function offsetGet($offset) {
 		if (!$this->offsetExists($offset)) {
-			throw new QuaffException("Invalid key '$offset'");
+			throw new Exception("Invalid key '$offset'");
 		}
 		return $this->data[ $offset ];
 	}

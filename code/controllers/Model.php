@@ -1,7 +1,10 @@
 <?php
-use Modular\Controller;
+namespace Quaff;
 
-class QuaffModelController extends Controller {
+use Modular\Controller;
+use SS_HTTPRequest;
+
+class ModelController extends Controller {
 	const ModelClass = '';
 
 	private static $allowed_actions = [
@@ -19,7 +22,7 @@ class QuaffModelController extends Controller {
 	 * @return array
 	 */
 	public function quaffStatics() {
-		$api = QuaffApi::locate($this->config()->get('service'));
+		$api = Api::locate($this->config()->get('service'));
 		$listEndpoint = $api->endpointForModel(static::model_class(), 'list');
 		$itemEndpoint = $api->endpointForModel(static::model_class(), 'item');
 		return [

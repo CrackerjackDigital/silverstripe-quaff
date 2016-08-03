@@ -1,10 +1,12 @@
 <?php
-use Modular\Object;
-
 /**
  * Very simple request class which wraps an api.
  */
-class QuaffAPIRequest extends Object {
+namespace Quaff;
+
+use Modular\Object;
+
+class APIRequest extends Object {
 	/** @var QuaffEndpointInterface */
 	protected $endpoint;
 

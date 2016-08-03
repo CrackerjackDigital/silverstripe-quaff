@@ -1,9 +1,10 @@
 <?php
+namespace Quaff\Interfaces;
 
-interface QuaffTransportInterface {
+interface Transport {
 	/**
 	 * @param string $uri
-	 * @return array|SimpleXMLElement
+	 * @return array|\SimpleXMLElement
 	 */
 	public function get($uri);
 }

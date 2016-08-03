@@ -1,7 +1,12 @@
 <?php
+namespace Quaff;
 
-class QuaffDeleteExistingEndpointExtension extends Extension {
-	use Modular\enabler;
+use Extension;
+use Modular\enabler;
+use Modular\Model;
+
+class DeleteExistingEndpointExtension extends Extension {
+	use enabler;
 
 	/**
 	 * @return QuaffEndpointInterface
@@ -15,7 +20,7 @@ class QuaffDeleteExistingEndpointExtension extends Extension {
 	 */
 	public function beforeQuaff() {
 		if ($this->enabled()) {
-			DataObject::get($this->owner()->getModelClass())->removeAll();
+			Model::get($this->owner()->getModelClass())->removeAll();
 		}
 	}
 }

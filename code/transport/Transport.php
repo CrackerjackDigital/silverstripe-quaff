@@ -1,7 +1,8 @@
 <?php
-use Modular\Object;
 
-abstract class QuaffTransport extends Object
+abstract namespace Quaff;
+
+class Transport extends Object
 	implements QuaffTransportInterface {
 	/**
 	 * @param QuaffEndpoint $endpoint

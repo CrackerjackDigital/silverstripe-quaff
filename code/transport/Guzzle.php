@@ -1,9 +1,8 @@
 <?php
-use GuzzleHttp\Client as Client;
-use GuzzleHttp\Psr7\Response as Response;
-use Modular\Helpers\Debugger;
 
-class QuaffTransportGuzzle extends QuaffTransport {
+namespace Quaff;
+
+class TransportGuzzle extends QuaffTransport {
 	const ContentTypeJSON     = 'application/json';
 	const ContentTypeXML      = 'application/xml';
 	const ResponseDecodeOK    = 'ok';

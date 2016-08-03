@@ -1,9 +1,17 @@
 <?php
+namespace Quaff;
+
 use Modular\Object;
+use Quaff\Exceptions\Exception;
+use Quaff\Interfaces\Endpoint;
+use Quaff\Interfaces\Mapper as MapperInterface;
+use Quaff\Interfaces\Locator as LocatorInterface;
+use ClassInfo;
+use Injector;
 
-abstract class QuaffMapper extends Object
-	implements QuaffMapperInterface, QuaffLocatorInterface {
-
+abstract class Mapper extends Object
+	implements MapperInterface, LocatorInterface
+{
 	// set this so all method's to call on model for value resolution  are prefixed by this,
 	// e.g. 'quaff' for 'quaffURLSegment' if method is 'URLSegment'
 	private static $map_method_prefix = self::DefaultMapMethodPrefix;
@@ -12,12 +20,12 @@ abstract class QuaffMapper extends Object
 
 	private static $tag_delimiter = self::DefaultTagDelimiter;
 
-	/** @var  QuaffEndpointInterface */
+	/** @var  Endpoint */
 	protected $endpoint;
 
 	private static $use_cache = true;
 
-	public function __construct(QuaffEndpoint $endpoint) {
+	public function __construct(Endpoint $endpoint) {
 		$this->endpoint = $endpoint;
 		parent::__construct();
 	}
@@ -25,10 +33,10 @@ abstract class QuaffMapper extends Object
 	/**
 	 * Return an mapper which can handle the provided endpoint's data type (acceptType).
 	 *
-	 * @param QuaffEndpointInterface $endpoint
+	 * @param Endpoint $endpoint
 	 *
-	 * @return QuaffMapperInterface
-	 * @throws QuaffException
+	 * @return MapperInterface
+	 * @throws Exception
 	 */
 	public static function locate($endpoint) {
 		$acceptType = $endpoint->getAcceptType();
@@ -36,8 +44,8 @@ abstract class QuaffMapper extends Object
 		$mapper = static::cache($acceptType);
 
 		if (!$mapper) {
-			foreach (array_slice(ClassInfo::subclassesFor('QuaffMapper'), 1) as $className) {
-				/** @var QuaffMapper $mapper */
+			foreach (array_slice(ClassInfo::subclassesFor('Quaff\Mapper'), 1) as $className) {
+				/** @var Mapper $mapper */
 				$mapper = Injector::inst()->create($className, $endpoint);
 
 				if ($mapper->match($acceptType)) {

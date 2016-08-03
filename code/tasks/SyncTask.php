@@ -1,6 +1,8 @@
 <?php
 
-abstract class QuaffSyncTask extends BuildTask {
+abstract namespace Quaff;
+
+class SyncTask extends BuildTask {
 	const ModelClass = '';
 
 	private static $quaff_task_enabled = true;

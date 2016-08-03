@@ -1,7 +1,7 @@
 <?php
-use Modular\ModelExtension;
+namespace Quaff;
 
-class QuaffModelExtension extends ModelExtension {
+class ModelExtension extends \Modular\ModelExtension {
 	private static $db = [
 		'QuaffLastSyncDateTime' => 'SS_DateTime'
 	];

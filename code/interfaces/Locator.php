@@ -1,6 +1,7 @@
 <?php
+namespace Quaff\Interfaces;
 
-interface QuaffLocatorInterface {
+interface Locator {
 	/**
 	 * Find an object based on the specs, optionally caching it for later re-retrieval.
 	 *
