@@ -1,6 +1,7 @@
 <?php
+use Modular\ModelExtension;
 
-class QuaffModelControllerExtension extends ModularDataExtension {
+class QuaffModelControllerExtension extends ModelExtension {
 
 	/**
 	 * Get extra statics from other extensions on owner via quaffStatics extension method and calling quaffStatic
@@ -17,7 +18,7 @@ class QuaffModelControllerExtension extends ModularDataExtension {
 		$direct = method_exists($owner, 'quaffStatics')
 			? $owner->quaffStatics() ?: []
 			: [];
-		
+
 		$extended = array_merge_recursive($owner->extend('quaffStatics') ?: []);
 
 		return array_merge(

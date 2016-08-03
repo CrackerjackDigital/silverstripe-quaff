@@ -1,6 +1,7 @@
 <?php
+use Modular\ModelExtension;
 
-class QuaffOrderableModelExtension extends ModularDataExtension {
+class QuaffOrderableModelExtension extends ModelExtension {
 	const OrderFieldName = 'QuaffedOrder';
 
 	private static $db = [

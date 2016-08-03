@@ -1,4 +1,5 @@
 <?php
+use Modular\Object;
 
 /**
  * Very simple request class which wraps an api.

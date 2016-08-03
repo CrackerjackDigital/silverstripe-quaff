@@ -1,5 +1,5 @@
 <?php
-use \Modular\ModularObject as Object;
+use Modular\Object as Object;
 
 /**
  * Provides an api where api calls can be configured and made.

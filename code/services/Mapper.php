@@ -1,5 +1,5 @@
 <?php
-use \Modular\ModularObject as Object;
+use Modular\Object;
 
 abstract class QuaffMapper extends Object
 	implements QuaffMapperInterface, QuaffLocatorInterface {

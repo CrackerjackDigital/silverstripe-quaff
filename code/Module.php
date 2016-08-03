@@ -1,5 +1,6 @@
 <?php
+use Modular\Module;
 
-class QuaffModule extends ModularModule {
-	
+class QuaffModule extends Module {
+
 }

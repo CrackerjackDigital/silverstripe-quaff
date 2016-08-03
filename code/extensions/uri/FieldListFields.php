@@ -5,7 +5,7 @@
  * e.g fields=id,title,name
  */
 class QuaffFieldListQueryHelper extends QuaffURIHelper {
-	use \Modular\config;
+	use Modular\config;
 
 	private static $fields_key = 'fields';
 

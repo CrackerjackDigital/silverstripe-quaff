@@ -1,20 +1,14 @@
 <?php
+use Modular\ModelExtension;
 
 /**
  * Adds a column to track the ordering of the model according to the order it was imported from the API.
  * QuaffOrderableExtension
  */
-class QuaffOrderableEndpointExtension extends ModularDataExtension {
-	use \Modular\enabler;
+class QuaffOrderableEndpointExtension extends ModelExtension {
+	use Modular\enabler;
 
 	private $order;
-
-	/**
-	 * @return Object|QuaffEndpointInterface
-	 */
-	protected function owner() {
-		return $this->owner;
-	}
 
 	/**
 	 * Resets the order count for the model to either the highest existing model order

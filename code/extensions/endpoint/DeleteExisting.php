@@ -1,7 +1,7 @@
 <?php
 
 class QuaffDeleteExistingEndpointExtension extends Extension {
-	use \Modular\enabler;
+	use Modular\enabler;
 
 	/**
 	 * @return QuaffEndpointInterface

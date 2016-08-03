@@ -1,5 +1,5 @@
 <?php
-use \Modular\ModularObject as Object;
+use Modular\Object;
 
 abstract class QuaffTransport extends Object
 	implements QuaffTransportInterface {

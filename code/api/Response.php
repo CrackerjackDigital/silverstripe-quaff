@@ -1,4 +1,5 @@
 <?php
+use Modular\Object;
 
 abstract class QuaffAPIResponse extends Object {
 	const SimpleMatchKey = 'request';

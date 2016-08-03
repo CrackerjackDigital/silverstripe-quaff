@@ -1,6 +1,7 @@
 <?php
 use GuzzleHttp\Client as Client;
 use GuzzleHttp\Psr7\Response as Response;
+use Modular\Helpers\Debugger;
 
 class QuaffTransportGuzzle extends QuaffTransport {
 	const ContentTypeJSON     = 'application/json';
@@ -56,7 +57,7 @@ class QuaffTransportGuzzle extends QuaffTransport {
 			);
 
 			self::debugging(
-				ModularDebugger::DebugFile | ModularDebugger::DebugTrace,
+				Debugger::DebugFile | Debugger::DebugTrace,
 				'sync'
 			)->trace($response->getBody(), __FUNCTION__);
 

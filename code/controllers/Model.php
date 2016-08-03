@@ -1,6 +1,7 @@
 <?php
+use Modular\Controller;
 
-class QuaffModelController extends ModularController {
+class QuaffModelController extends Controller {
 	const ModelClass = '';
 
 	private static $allowed_actions = [
