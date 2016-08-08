@@ -1,19 +1,13 @@
 <?php
-namespace Quaff;
+namespace Quaff\Extensions\Endpoint;
 
-use Extension;
 use Modular\enabler;
 use Modular\Model;
+use Modular\owned;
 
-class DeleteExistingEndpointExtension extends Extension {
+class DeleteExisting extends Endpoint {
 	use enabler;
-
-	/**
-	 * @return QuaffEndpointInterface
-	 */
-	protected function owner() {
-		return $this->owner;
-	}
+	use owned;
 
 	/**
 	 * If enabled deletes existing models of the extended endpoint's modelClass.

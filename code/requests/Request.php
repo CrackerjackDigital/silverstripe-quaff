@@ -2,26 +2,28 @@
 /**
  * Very simple request class which wraps an api.
  */
-namespace Quaff;
+namespace Quaff\Requests;
 
 use Modular\Object;
+use Quaff\Interfaces\Endpoint;
+use Quaff\Interfaces\Quaffable;
 
-class APIRequest extends Object {
-	/** @var QuaffEndpointInterface */
+class Request extends Object {
+	/** @var Endpoint */
 	protected $endpoint;
 
-	/** @var QuaffMappableInterface */
+	/** @var Quaffable */
 	protected $model;
 
 	/** @var array */
 	protected $extraData;
 
 	/**
-	 * @param QuaffEndpointInterface|string                 $endpoint e.g. "item/{$id}"
-	 * @param QuaffMappableExtension|QuaffMappableInterface $model
-	 * @param array                                         $extraData
+	 * @param Endpoint|string $endpoint e.g. "item/{$id}"
+	 * @param Quaffable       $model
+	 * @param array           $extraData
 	 */
-	public function __construct(QuaffEndpointInterface $endpoint, QuaffMappableInterface $model, array $extraData = array()) {
+	public function __construct(Endpoint $endpoint, Quaffable $model, array $extraData = array()) {
 		parent::__construct();
 
 		$this->endpoint = $endpoint;

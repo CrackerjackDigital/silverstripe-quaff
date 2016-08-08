@@ -1,19 +1,21 @@
 <?php
 
-namespace Quaff;
+namespace Quaff\Endpoints;
+
+use Modular\Helpers\Debugger;
 
 use Modular\Model;
 use Modular\Object;
-use Quaff\Interfaces\Mappable;
+use Quaff\Interfaces\Quaffable;
 use Quaff\Responses\Response;
 use Quaff\Transport\Transport;
+
 use Quaff\Interfaces\Transport as TransportInterface;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Modular\Controller;
 use Injector;
 
-abstract class Endpoint extends Object implements EndpointInterface
-{
+abstract class Endpoint extends Object implements EndpointInterface {
 	const FormatKeys   = 1;
 	const FormatValues = 2;
 	const FormatBoth   = 3;
@@ -23,6 +25,8 @@ abstract class Endpoint extends Object implements EndpointInterface
 
 	// override in concrete instance to give the class of the response returned by this endpoint
 	const ResponseClass = '';
+
+	const ErrorClass = 'Quaff\Responses\Error';
 
 	/** @var  string the endpoint path e.g 'some-endpoint/get */
 	protected $path;
@@ -43,19 +47,53 @@ abstract class Endpoint extends Object implements EndpointInterface
 	}
 
 	/**
-	 * Call extensions beforeQuaff to perform any initialisation, e.g. authentication, clearing existing data etc.
+	 * Perform any initialisation, e.g. authentication, clearing existing data etc.
 	 */
 	public function init() {
-		$this->extend('beforeQuaff');
+		$this->extend('quaffEndpointInit');
 	}
 
 	/**
-	 * @param array                  $params
-	 * @param Mappable $model
-	 * @return array|\SimpleXMLElement
+	 * Quaff's the remote endpoint, pulling down all items and then writes them to local models.
+	 */
+	public function sync() {
+		$this->extend('startSync');
+		$this->init();
+
+		/** @var \Quaff\Interfaces\Response $response */
+		$response = $this->quaff();
+
+		if ($response->isValid()) {
+			if ($items = $response->getItems()) {
+
+				if ($items->count()) {
+					static::log_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
+
+					foreach ($items as $item) {
+						$this->extend('beforeQuaffItemWrite', $item, $items, $response);
+
+						$item->write(true);
+
+						$this->extend('afterQuaffItemWrite', $item, $items, $response);
+					}
+				}
+			}
+		}
+		$this->extend('endSync', $response, $items);
+		return $items;
+	}
+
+	/**
+	 * Call the remote endpoint and return a response.
+	 *
+	 * @param array     $params
+	 * @param Quaffable $model to provide as a template when building the uri to call
+	 * @return Response
 	 * @api
 	 */
 	public function quaff(array $params = [], $model = null) {
+		$this->extend('startQuaff', $params, $model);
+
 		/** @var TransportInterface $transport */
 		$transport = Transport::factory(
 			$this,
@@ -63,31 +101,30 @@ abstract class Endpoint extends Object implements EndpointInterface
 		);
 
 		/** @var Response $response */
-		$response = $transport->get(
+		$nativeResponse = $transport->get(
 			$this->uri($params, $model)
 		);
 
-		return $this->newResponse(
-			$response
+		$response = $this->responseFactory(
+			$nativeResponse
 		);
+		$this->extend('endQuaff', $response);
+		return $response;
 	}
 
 	/**
-	 * Return full url including any query parameters
+	 * Return full remote url with any query parameters from params and from model passed.
 	 *
-	 * @param array                       $params additional query string parameters
-	 * @param Mappable|null $model
+	 * @param array          $params additional query string parameters
+	 * @param Quaffable|null $model  which provided parameters to add to the url
 	 * @return string
 	 */
 	protected function uri(array $params = [], $model = null) {
-		$url = $this->urlParams(
-			Controller::join_links(
-				$this->getBaseURL(),
-				$this->getURL()
-			),
-			$params
-		);
 
+		$url = Controller::join_links(
+			$this->getBaseURL(),
+			$this->getURL()
+		);
 		$queryParams = $this->queryParams($params, $model);
 
 		return self::build_query($url, $queryParams);
@@ -96,12 +133,18 @@ abstract class Endpoint extends Object implements EndpointInterface
 	/**
 	 * Returns an array of query string segments in preference of config.params.get, model fields then params.
 	 *
-	 * @param array                                  $params
-	 * @param Mappable|Model|null $model if not supplied getModelClass singleton will be used
+	 * @param array                $params
+	 * @param Quaffable|Model|null $model if not supplied getModelClass singleton will be used
 	 * @return array
 	 */
 	protected function queryParams(array $params = [], $model = null) {
 		$fields = [];
+
+		// merge provided params into the Endpoints default params, provided take preference
+		$params = array_merge(
+			$this->uriParams(),
+			$params
+		);
 
 		if (!$model) {
 			$model = singleton($this->getModelClass());
@@ -117,7 +160,7 @@ abstract class Endpoint extends Object implements EndpointInterface
 						array_keys(
 							$model->quaffMapForEndpoint(
 								$this,
-								Mappable::MapOwnFieldsOnly
+								Quaffable::MapOwnFieldsOnly
 							)
 						)
 					)
@@ -157,10 +200,12 @@ abstract class Endpoint extends Object implements EndpointInterface
 
 	/**
 	 * Return a new instance of the model class returned from this endpoint with optional data set.
+	 *
 	 * @param array $initData
-	 * @return Model|null
+	 * @param null  $flags
+	 * @return \Modular\Model|null
 	 */
-	public function newModel(array $initData = null, $flags = null) {
+	public function modelFactory(array $initData = null, $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
 			return Injector::inst()->create($modelClass, $initData);
 		}
@@ -174,7 +219,7 @@ abstract class Endpoint extends Object implements EndpointInterface
 	 * @param $apiData - raw data from the api call result, e.g. array from json
 	 * @return Response|null
 	 */
-	public function newResponse($apiData) {
+	public function responseFactory($apiData) {
 		if ($responseClass = $this->getResponseClass()) {
 			return Injector::inst()->create($responseClass, $this, $apiData);
 		}
@@ -197,14 +242,12 @@ abstract class Endpoint extends Object implements EndpointInterface
 	}
 
 	/**
-	 * Override in concrete classes to provide versioning, token replacement etc.
+	 * Replaces tokens in the url which values from params. Override in concrete classes to provide custom url mangling.
 	 *
-	 * @param       $url
-	 * @param array $params
-	 * @return mixed
+	 * @return array map of token name => value for paramters to add to the remote uri called.
 	 */
-	public function urlParams($url, array $params = []) {
-		return $url;
+	public function uriParams() {
+		return [];
 	}
 
 	public function getInfo() {
@@ -217,6 +260,10 @@ abstract class Endpoint extends Object implements EndpointInterface
 
 	public function getResponseClass() {
 		return $this->info('response') ?: static::ResponseClass;
+	}
+
+	public function getErrorClass() {
+		return $this->info('error') ?: static::ErrorClass;
 	}
 
 	/**

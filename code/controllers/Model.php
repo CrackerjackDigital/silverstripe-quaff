@@ -1,10 +1,11 @@
 <?php
-namespace Quaff;
+namespace Quaff\Controllers;
 
 use Modular\Controller;
+use Quaff\Api;
 use SS_HTTPRequest;
 
-class ModelController extends Controller {
+class Model extends Controller {
 	const ModelClass = '';
 
 	private static $allowed_actions = [

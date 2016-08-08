@@ -1,5 +1,4 @@
 <?php
-
 namespace Quaff\Tasks;
 
 use ClassInfo;
@@ -51,7 +50,7 @@ class SyncTaskRunner extends TaskRunner {
 	protected function getTasks() {
 		$availableTasks = array();
 
-		$taskClasses = ClassInfo::subclassesFor('QuaffSyncTask');
+		$taskClasses = ClassInfo::subclassesFor('Quaff\SyncTask');
 		// remove the base class
 		array_shift($taskClasses);
 

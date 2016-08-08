@@ -24,11 +24,19 @@ interface Mapper {
 	const DefaultTagDelimiter = '|';
 
 	/**
-	 * Return an array of acceptTypes this mapper handles.
+	 * Locate a suitable mapper for this endpoint.
+	 *
+	 * @param Endpoint $endpoint
+	 * @return Mapper
+	 */
+	public static function locate(Endpoint $endpoint);
+
+	/**
+	 * Return an array of contentTypes this mapper handles.
 	 *
 	 * @return array
 	 */
-	public function acceptTypes();
+	public function contentTypes();
 
 	/**
 	 * @param array      $fromData
@@ -50,21 +58,29 @@ interface Mapper {
 	/**
 	 * Looks up $path in data and returns value (setting $found to true if so).
 	 *
-	 * @param Mapper $mapper
-	 * @param array  $fieldInfo
+	 * @param string $path
+	 * @param array  $data
 	 * @param bool   $found
 	 * @return mixed
 	 */
-	public static function traverse(Mapper $mapper, array $fieldInfo, array $data, &$found = false);
+	public static function traverse($path, array $data, &$found = false);
 
 	/**
 	 * Adds value to $data at $path.
 	 *
 	 * @param Mapper      $mapper
-	 * @param             $path
+	 * @param             $localName
 	 * @param             $value
 	 * @param array       $data
 	 * @return mixed
+	 * @internal param $path
 	 */
 	public static function build(Mapper $mapper, $localName, $value, array &$data);
+
+	/**
+	 * Paths generally have some form of delimiter, e.g. a '.' or '/'
+	 *
+	 * @return mixed
+	 */
+	public static function path_delimiter();
 }

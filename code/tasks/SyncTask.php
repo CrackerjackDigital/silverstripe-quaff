@@ -3,36 +3,29 @@ namespace Quaff\Tasks;
 
 use BuildTask;
 use Config;
+use Modular\enabler;
+use Quaff\Api;
 
 abstract class SyncTask extends BuildTask {
-	const ModelClass = '';
+	use enabler;
 
-	private static $quaff_task_enabled = true;
+	const ApiClass = 'ShuttlerockApi';
+	/** overload to provide the name of the endpoint class to sync, or leave blank to call the api sync */
+	const EndpointPath = '';
 
-	private static $delete_existing = true;
+	public function run($request) {
+		if ($this->enabled()) {
+			/** @var Api $api */
+			$api = \Injector::inst()->create(static::ApiClass);
+			$api->sync(static::EndpointPath);
 
-	/**
-	 * @param null $enable
-	 * @return boolean
-	 */
-	public static function enabled($enable = null) {
-		if ($args = func_get_args()) {
-			Config::inst()->update(get_called_class(), 'quaff_task_enabled', $args[0]);
-			return static::enabled();
 		} else {
-			return Config::inst()->get(get_called_class(), 'quaff_task_enabled');
+			die(__CLASS__ . ' is not enabled');
 		}
-	}
-
-	public function isEnabled() {
-		return static::enabled();
 	}
 
 	public function sequence(array $toReorder) {
 		return Config::inst()->get(get_called_class(), 'sequence') ?: count($toReorder) + 1;
 	}
 
-	public function model_class() {
-		return static::ModelClass;
-	}
 }

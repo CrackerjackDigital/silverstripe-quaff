@@ -3,10 +3,7 @@ Name: quaff-config
 ---
 Injector:
   QuaffMapper:
-    class: QuaffArrayMapper
-QuaffModelController:
-  extensions:
-    - QuaffModelControllerExtension
-QuaffModel:
-  extensions:
-    - QuaffMappableExtension
+    class: Quaff\Mappers\ArrayMapper
+Quaff\Tasks\SyncTask:
+  enabled: true
+

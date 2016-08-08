@@ -4,108 +4,255 @@ namespace Quaff\Responses;
 use ArrayList;
 use Modular\NotImplementedException;
 use Modular\Object;
-use Quaff\Exceptions\Exception;
-use Quaff\Interfaces\Endpoint;
-use Quaff\Mapper;
+use Quaff\Exceptions\Response as Exception;
+use Quaff\Interfaces\Endpoint as EndpointInterface;
+use Quaff\Interfaces\Response as ResponseInterface;
+use Quaff\Interfaces\Mapper as MapperInterface;
+use Quaff\Mappers\ArrayMapper;
 
-abstract class Response extends Object {
+// roll on php 5.6 wider support so can use expressions in constanta!
+if (!defined('QUAFF_RESPONSE_DEFAULT_JSON_DECODE_OPTIONS')) {
+	define('QUAFF_RESPONSE_DEFAULT_JSON_DECODE_OPTIONS', true);
+}
+if (!defined('QUAFF_RESPONSE_DEFAULT_XML_DECODE_OPTIONS')) {
+	define('QUAFF_RESPONSE_DEFAULT_XML_DECODE_OPTIONS', LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NONET | LIBXML_NOWARNING | LIBXML_PARSEHUGE | LIBXML_PEDANTIC);
+}
+if (!defined('QUAFF_RESPONSE_DEFAULT_HTML_DECODE_OPTIONS')) {
+	define('QUAFF_RESPONSE_DEFAULT_HTML_DECODE_OPTIONS', LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NONET | LIBXML_NOWARNING | LIBXML_PARSEHUGE | LIBXML_PEDANTIC | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOBLANKS);
+}
+
+abstract class Response extends Object implements ResponseInterface {
 	const SimpleMatchKey = 'request';
 
 	const RawDataArray = 'array';
 
-	protected $data = array();
+	const OKMessage   = 'OK';
+	const FailMessage = 'Failed';
 
-	/** @var Endpoint */
+	const ContentTypeJSON = 'json';
+	const ContentTypeXML  = 'xml';
+	const ContentTypeHTML = 'html';
+
+	const DefaultJSONOptions = QUAFF_RESPONSE_DEFAULT_JSON_DECODE_OPTIONS;
+	const DefaultXMLOptions  = QUAFF_RESPONSE_DEFAULT_XML_DECODE_OPTIONS;
+	const DefaultHTMLOptions = QUAFF_RESPONSE_DEFAULT_HTML_DECODE_OPTIONS;
+
+	private static $content_types = [
+		self::ContentTypeJSON => ['application/json'],
+		self::ContentTypeXML  => ['application/xml', 'text/xml'],
+		self::ContentTypeHTML => ['text/html', 'application/xhtml+xml'],
+	];
+
+	private static $decode_options = [
+		self::ContentTypeJSON => self::DefaultJSONOptions,
+		self::ContentTypeXML  => self::DefaultXMLOptions,
+		self::ContentTypeHTML => self::DefaultHTMLOptions,
+	];
+
+	protected $rawData;
+
+	protected $metaData;
+
+	/** @var EndpointInterface */
 	protected $endpoint = null;
 
-	private static $status_ok = 'OK';
-
-	public function __construct(Endpoint $endpoint, array $data = array()) {
+	/**
+	 * Response constructor.
+	 *
+	 * @param EndpointInterface $endpoint
+	 * @param string            $rawData  e.g. body of HTTP response
+	 * @param array             $metaData extra information such as headers
+	 */
+	public function __construct(EndpointInterface $endpoint, $rawData, $metaData = null) {
 		$this->endpoint = $endpoint;
-		$this->data = $data;
+		$this->rawData = $rawData;
+		$this->metaData = $metaData;
 		parent::__construct();
 	}
 
 	public function __get($name) {
-		return $this->hasMethod("get$name") ? $this->{"get$name"}() : $this->data($name);
+		return $this->hasMethod("get$name")
+			? $this->{"get$name"}()
+			: $this->data($name);
 	}
 
 	/**
-	 * Return returned version string or null if not found in response.
+	 * Return native or implementation defined status code, e.g. '200' for HTTP.
+	 *
+	 * @return mixed
+	 */
+	public function getResultCode() {
+		return $this->meta('ResultCode');
+	}
+
+	/**
+	 * Return a useful translated message, e.g. 'ok' or error text.
 	 *
 	 * @return string|null
 	 */
-	abstract public function getResponseVersion();
+	public function getResultMessage() {
+		return $this->meta('ResultMessage') ?: self::FailMessage;
+	}
 
 	/**
-	 * Check if the request was invalid, e.g. bad/missing parameters but we got something back from API.
+	 * Return the type of raw content we got back in the response to the request
+	 * e.g. 'application/json' or 'text/html' for an http response.
 	 *
-	 * For HTTP errors an exception will be thrown when the request is made instead as maybe config or remote endpoint
-	 * wrong or not available at the moment but probably not recoverable.
-	 *
-	 * If this returns true then getNativeCode should return the API error result code if there is one,
-	 * and getMessage should return the error message if there is one.
-	 *
-	 * @return boolean
-	 *      true if request failed (bad url, invalid parameters passed etc)
-	 *      false if something returned (maybe empty though)
+	 * @return string
 	 */
-	abstract public function isError();
-
-	/**
-	 * Return the number of items returned (maybe one for a single model), 0 if none or null if not found.
-	 *
-	 * @return integer|null
-	 */
-	abstract public function getItemCount();
-
-	/**
-	 * Return the start index from he api call if provided, e.g. for pagination, or null if not found.
-	 *
-	 * @return integer|null
-	 */
-	abstract public function getStartIndex();
+	public function getContentType() {
+		return $this->meta('ContentType');
+	}
 
 	/**
 	 * Return the items returned by the request as a list.
 	 *
 	 * @param int $options
-	 * @return SS_List
+	 * @return \SS_List
 	 */
-	public function getItems($options = Mapper::DefaultOptions) {
-		return $this->items($this->data(), $options);
+	public function getItems($options = MapperInterface::DefaultOptions) {
+		return $this->items($options);
 	}
 
 	/**
-	 * Return list of Models populated from the provided list of raw items.
+	 * Return list of Models populated from the raw data.
 	 *
 	 * Items are either existing found using 'findModel' or new models via 'makeModel'
 	 * updated from the item data via their 'quaff' method.
 	 *
-	 * @param array|\Traversable $items
-	 * @param                    $flags
+	 * @param  array|int $options
 	 * @return \ArrayList
+	 * @throws \Modular\NotImplementedException
+	 * @throws \Quaff\Exceptions\Response
 	 */
-	protected function items($items, $flags = null) {
-		$models = new ArrayList();
+	protected function items($options = null) {
+		static $models;
 
-		if ($this->isValid()) {
+		if ($models === false) {
+			$models = new ArrayList();
 
-			$endpoint = $this->getEndpoint();
+			if ($this->isValid()) {
+				$contentType = $this->getContentType();
 
-			foreach ($items as $item) {
-				/** QuaffModelInterface */
-				if (!$model = $this->findModel($item, $flags)) {
-					$model = $endpoint->newModel($item, $flags);
+				if ($type = static::decode_content_type($contentType)) {
+					$items = $this->$type($options);
+				} else {
+					throw new Exception("Bad content type '$contentType'");
 				}
-				// call this directly instead of extend.
-				$model->quaff($endpoint, $item, $flags);
+				foreach ($items as $item) {
+					/** QuaffModelInterface */
+					if (!$model = $this->findModel($item, $options)) {
+						$model = $this->endpoint->modelFactory($item, $options);
+					}
+					// call this directly instead of extend.
+					$model->quaff($this->endpoint, $item, $options);
 
-				$models->push($model);
+					$models->push($model);
+				}
+
 			}
-
 		}
 		return $models;
+	}
+
+	/**
+	 * Content types may have character encoding so just do a rude find of the expected content type in the response
+	 * content type starting from the first character in lower-case.
+	 *
+	 * @param string $contentType we are looking to decode
+	 * @return int|null the ContentTypeACB constant for the string content type or null if not found
+	 */
+	protected static function decode_content_type($contentType) {
+		$contentTypes = static::config()->get('content_types');
+
+		foreach ($contentTypes as $type => $signatures) {
+			foreach ($signatures as $signature) {
+				if (0 === strpos(strtolower($contentType), strtolower($signature))) {
+					return $type;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Return rawData as json
+	 *
+	 * @return mixed
+	 * @throws Exception
+	 */
+	protected function json() {
+		if (is_null($json = json_decode($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeJSON)))) {
+			$message = "Failed to load json from response raw data";
+			if ($error = json_last_error()) {
+				$message .= ": '$error'";
+			}
+			throw new Exception($message);
+		}
+		if ($itemPath = $this->endpoint->getItemPath()) {
+			$value = ArrayMapper::traverse($itemPath, $json, $found);
+
+			if (!$found) {
+				throw new Exception("Item node '$itemPath' not found in response");
+			}
+			return $value;
+		} else {
+			return $json;
+		}
+	}
+
+	/**
+	 * Return provided text as an xml DOM Document.
+	 *
+	 * @return \DOMDocument
+	 * @throws Exception
+	 */
+	protected function xml() {
+		libxml_use_internal_errors(true);
+		libxml_clear_errors();
+
+		$doc = new \DOMDocument();
+		if (!$doc->loadXML($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeXML))) {
+
+			$message = "Failed to load document from response raw data";
+			if ($error = libxml_get_last_error()) {
+				$message .= ": '$error'";
+			}
+			throw new Exception($message);
+		}
+		$xpath = new \DOMXPath($doc);
+		if ($itemPath = $this->endpoint->getItemPath()) {
+			return $xpath->query($itemPath);
+		} else {
+			return $xpath->query('/');
+		}
+	}
+
+	/**
+	 * Return provided text as an xml DOM Document.
+	 *
+	 * @return \DOMDocument
+	 * @throws Exception
+	 */
+	protected function html() {
+		libxml_use_internal_errors(true);
+		libxml_clear_errors();
+
+		$doc = new \DOMDocument();
+		if (!$doc->loadHTML($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeHTML))) {
+			$message = "Failed to load document from response raw data";
+
+			if ($error = libxml_get_last_error()) {
+				$message .= ": '$error'";
+			}
+			throw new Exception($message);
+		}
+		$xpath = new \DOMXPath($doc);
+		if ($itemPath = $this->endpoint->getItemPath()) {
+			return $xpath->query($itemPath);
+		} else {
+			return $xpath->query('/');
+		}
 	}
 
 	/**
@@ -116,7 +263,7 @@ abstract class Response extends Object {
 	 * @return \Quaff\Interfaces\Mapper
 	 */
 	protected function newModel(array $data = null, $flags = null) {
-		return $this->getEndpoint()->newModel($data);
+		return $this->getEndpoint()->modelFactory($data);
 	}
 
 	/**
@@ -133,7 +280,7 @@ abstract class Response extends Object {
 	}
 
 	/**
-	 * @return Endpoint|Object
+	 * @return EndpointInterface
 	 */
 	public function getEndpoint() {
 		return $this->endpoint;
@@ -146,31 +293,21 @@ abstract class Response extends Object {
 	 * @return array
 	 */
 	public function data($key = null) {
-		return $key
-			? isset($this->data[ $key ]) ? $this->data[ $key ] : null
-			: $this->data;
+		return array_key_exists($key, $this->rawData) ? $this->rawData[ $key ] : null;
 	}
 
 	/**
-	 * Return the status code, e.g. 200 or 500
+	 * Return metaData value by key
 	 *
-	 * @return int
+	 * @param $key
+	 * @return array
 	 */
-	public function getResponseCode() {
-		return $this->data('Code');
-	}
-
-	/**
-	 * Return a useful translated message, e.g. 'ok' or error text.
-	 *
-	 * @return string|null
-	 */
-	public function getResultMessage() {
-		return $this->data('Message');
+	public function meta($key = null) {
+		return array_key_exists($key, $this->metaData) ? $this->metaData[ $key ] : null;
 	}
 
 	public function getURI() {
-		return $this->data('URI');
+		return $this->meta('URI');
 	}
 
 	/**
@@ -190,9 +327,8 @@ abstract class Response extends Object {
 	 * @internal param string $format - does nothing at the moment, always returns an array.
 	 */
 	public function getRawData() {
-		return $this->data;
+		return $this->rawData;
 	}
-
 
 	/**
 	 * (PHP 5 &gt;= 5.0.0)<br/>
@@ -208,7 +344,7 @@ abstract class Response extends Object {
 	 *                      The return value will be casted to boolean if non-boolean was returned.
 	 */
 	public function offsetExists($offset) {
-		return is_array($this->data) && array_key_exists($offset, $this->data);
+		return is_array($this->rawData) && array_key_exists($offset, $this->rawData);
 	}
 
 	/**
@@ -222,7 +358,7 @@ abstract class Response extends Object {
 		if (!$this->offsetExists($offset)) {
 			throw new Exception("Invalid key '$offset'");
 		}
-		return $this->data[ $offset ];
+		return $this->rawData[ $offset ];
 	}
 
 	/**
@@ -232,7 +368,7 @@ abstract class Response extends Object {
 	 * @param mixed $value
 	 */
 	public function offsetSet($offset, $value) {
-		$this->data[ $offset ] = $value;
+		$this->rawData[ $offset ] = $value;
 	}
 
 	/**
@@ -247,7 +383,7 @@ abstract class Response extends Object {
 	 */
 	public function offsetUnset($offset) {
 		if ($this->offsetExists($offset)) {
-			unset($this->data[ $offset ]);
+			unset($this->rawData[ $offset ]);
 		}
 	}
 

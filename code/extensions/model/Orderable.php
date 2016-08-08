@@ -1,10 +1,9 @@
 <?php
-namespace Quaff;
+namespace Quaff\Extensions\Model;
 
-use Modular\ModelExtension;
 use Quaff\Interfaces\Endpoint;
 
-class OrderableModelExtension extends ModelExtension {
+class Orderable extends Model {
 	const OrderFieldName = 'QuaffedOrder';
 
 	private static $db = [
@@ -20,7 +19,7 @@ class OrderableModelExtension extends ModelExtension {
 	/**
 	 * Called after each model is loaded from api data to set the quaff order field.
 	 *
-	 * @param \QuaffEndpointInterface|\QuaffOrderableEndpointExtension $endpoint
+	 * @param Endpoint|\Quaff\Extensions\Endpoint\Orderable $endpoint
 	 */
 	public function afterQuaff(Endpoint $endpoint) {
 		$this->owner->{self::OrderFieldName} = $endpoint->quaffedOrder(true);

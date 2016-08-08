@@ -1,6 +1,8 @@
 <?php
 namespace Quaff\Interfaces;
 
+use Quaff\Responses\Response;
+
 interface Endpoint {
 
 	/**
@@ -11,9 +13,15 @@ interface Endpoint {
 	public function init();
 
 	/**
-	 * @param array                  $params
-	 * @param QuaffMappableInterface $model
-	 * @return QuaffAPIResponse
+	 * Calls remote uri and creates models in database.
+	 * @return mixed
+	 */
+	public function sync();
+
+	/**
+	 * @param array     $params
+	 * @param Quaffable $model
+	 * @return Response
 	 */
 	public function quaff(array $params = [], $model = null);
 
@@ -24,13 +32,23 @@ interface Endpoint {
 	public function auth();
 
 	/**
+	 * Match this endpoints path/info against another endpoint to see if they are the same or
+	 * this one handles the one passed (e.g. as a requested endpoint).
+	 *
+	 * @param $pattern
+	 * @param $to
+	 * @return mixed
+	 */
+	public static function match($pattern, $to);
+
+	/**
 	 * @param array|null $data
 	 * @param null       $flags
-	 * @return DataObject|QuaffModelInterface
+	 * @return Model
 	 */
-	public function newModel(array $data = null, $flags = null);
+	public function modelFactory(array $data = null, $flags = null);
 
-	public function newResponse($apiData);
+	public function responseFactory($apiData);
 
 	/**
 	 * Return the 'info' for the endpoint, generally an array.
@@ -40,11 +58,21 @@ interface Endpoint {
 	public function getInfo();
 
 	/**
+	 * Return the path to the item collection in the return data, e.g. 'response.items' or '/response/items' for json and xml respectively.
+	 * @return mixed
+	 */
+	public function getItemPath();
+
+	/**
 	 * Return the class name of the 'root' model returned by this endpoint.
 	 *
 	 * @return mixed
 	 */
 	public function getModelClass();
+
+	public function getResponseClass();
+
+	public function getErrorClass();
 
 	/**
 	 * @return mixed

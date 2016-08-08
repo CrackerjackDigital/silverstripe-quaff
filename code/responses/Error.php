@@ -4,7 +4,7 @@ namespace Quaff\Responses;
 
 class Error extends Response {
 
-	public function getResponseVersion() {
+	public function getVersion() {
 		return $this->data('Version');
 	}
 

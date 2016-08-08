@@ -3,6 +3,6 @@ Name: quaff-array-mapper-config
 After:
   - '#quaff-config'
 ---
-QuaffArrayMapper:
+Quaff\Mappers\ArrayMapper:
   accept_types:
     - 'application/json'

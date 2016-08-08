@@ -1,16 +1,17 @@
 <?php
-namespace Quaff;
+namespace Quaff\Extensions\URI;
 
 use Modular\config;
 use Modular\owned;
-use Quaff\Interfaces\Mappable;
+use Quaff\Interfaces\Quaffable;
+use Quaff\Interfaces\Mapper;
 
 /**
  * Adds a list of fields from the model to the query parameters.
  * e.g fields=id,title,name
  */
 
-class FieldListQueryHelper extends URIHelper {
+class FieldList extends URI {
 	use config;
 	use owned;
 
@@ -23,15 +24,15 @@ class FieldListQueryHelper extends URIHelper {
 	 *
 	 * - adds fields=field1,field2 parameter
 	 *
-	 * @param Mappable|\DataObject|null $model
-	 * @param array                                  $params
+	 * @param Quaffable|\DataObject|null $model
+	 * @param array                      $params
 	 * @return array
 	 */
 	public function updateQueryParameters(&$params, $model) {
 		if ($model) {
 			$delimiter = Mapper::path_delimiter();
 
-			$map = $model->quaffMapForEndpoint($this->owner(), Mappable::MapOwnFieldsOnly);
+			$map = $model->quaffMapForEndpoint($this->owner(), Quaffable::MapOwnFieldsOnly);
 
 			/* map out the 'api' fields which exist in a remote relationship and return
 			   first part of the 'field' e.g. 'Description' for 'Description.Text' so request

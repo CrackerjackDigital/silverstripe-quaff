@@ -5,15 +5,26 @@
 namespace Quaff;
 
 use ClassInfo;
+use Director;
 use Injector;
+
+use Modular\debugging;
+use Modular\Debugger;
 use Modular\Object as Object;
+use Quaff\Endpoints\Endpoint;
 use Quaff\Exceptions\Exception;
 use Quaff\Interfaces\Api as ApiInterface;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Locator as LocatorInterface;
 
-class Api extends Object
-	implements ApiInterface, LocatorInterface {
+abstract class Api extends Object
+	implements ApiInterface, LocatorInterface
+{
+	use debugging;
+
+	/** @var string provide in concrete api implementation as it is the name by which this api can be located by */
+	private static $service = '';
+
 	/** @var string use this accept type with requests if none defined in the info */
 	private static $accept_type = 'application/json';
 
@@ -21,53 +32,57 @@ class Api extends Object
 	private static $auth_provider = 'QuaffAuthTypeBasic';
 
 	/** @var string the name of a QuaffTransport derived class */
-	private static $transport = 'QuaffTransportGuzzle';
+	private static $transport = 'Quaff\Transport\Guzzle';
 
 	/** @var string set this to log to this file under assets directory, e.g. 'logs/quaff-shuttlerock.log' */
 	private static $log_path_name = '';
 
 	/** @var string set this to log errors to this file under assets directory, e.g. 'logs/quaff-shuttlerock-errors.log' */
-	private static $errorlog_path_name = '';
+	private static $error_log_path_name = '';
 
 	/** @var string set this to send error emails to this address when self.error is called */
-	private static $errorlog_email_address = '';
+	private static $error_log_email_address = '';
 
-	/** @var string provide in concrete api implementation as it is the name by which this api can be located by */
-	private static $service = '';
+	private static $sync_endpoints = [
+/*
+        'list/some-endpoint' => true
+ */
+	];
 
-	private static $endpoints = [
-#   see README endpoint config for more details
-#       'get/v1/public' => [
-#           'accept' => 'application/json',
-#           'url' => 'http://example.com/api/v1/public/',
-#           'transport' => 'QuaffTransportGuzzle'
-#       ],
-#       '*/private' => [
-#           'url' => 'https://example.com/api/v1/private/',
-#           'auth' => [
-#               'username' => 'fred',
-#               'password' => 'asdwkdopedopkewpf2u9e903e'
-#           ]
-#       ],
-#       'get/some-endpoint' => [
-#           'url' => 'some/endpoint',
-#           'base' => 'get/public',
-#           'class' => 'some model class',
-#           'params' => [
-#				'page' => [ false, '/^\d+$/' ],
-#				'per_page' => [ false, '/^\d+$/' ]
-#			]
-#       ],
-#       'post/some-private-endpoint' => [
-#           'url' => 'some/private-endpoint',
-#           'base' => 'post/private'
-#           'class' => 'some model class',
-#			'params' => [
-#				'id' => [ true, /^[a-z0-9]+$/],
-#               'title' => [ true ],
-#               'sku' => [ true, '/^[a-z]{3}-[0-9]{6}$/' ]
-#			]
-#       ]
+	private static $endpoints = [ /*
+/*   see README endpoint config for more details
+       'get/v1/public' => [
+           'accept' => 'application/json',
+           'url' => 'http://example.com/api/v1/public/',
+           'transport' => 'QuaffTransportGuzzle'
+       ],
+       'private' => [
+           'url' => 'https://example.com/api/v1/private/',
+           'auth' => [
+               'username' => 'fred',
+               'password' => 'asdwkdopedopkewpf2u9e903e'
+           ]
+       ],
+       'get/some-endpoint' => [
+           'url' => 'some/endpoint',
+           'base' => 'get/public',
+           'class' => 'some model class',
+           'params' => [
+				'page' => [ false, '/^\d+$/' ],
+				'per_page' => [ false, '/^\d+$/' ]
+			]
+       ],
+       'post/some-private-endpoint' => [
+           'url' => 'some/private-endpoint',
+           'base' => 'post/private'
+           'class' => 'some model class',
+			'params' => [
+				'id' => [ true, /^[a-z0-9]+$/],
+               'title' => [ true ],
+               'sku' => [ true, '/^[a-z]{3}-[0-9]{6}$/' ]
+			]
+       ]
+*/
 	];
 
 	public function quaff(EndpointInterface $endpoint, array $params = [], $model = null) {
@@ -82,7 +97,7 @@ class Api extends Object
 	 * @return Api
 	 *
 	 */
-	public static function locate($service) {
+	public static function locate(EndpointInterface $service) {
 		$api = static::cache($service);
 
 		if (!$api) {
@@ -101,14 +116,67 @@ class Api extends Object
 		return static::cache($service, $api);
 	}
 
+	public static function sync($endpointPaths = null) {
+		static::debugger()->level(\SS_Log::INFO);
+
+		static::log_message('Starting sync', \SS_Log::INFO);
+
+		if (!Director::is_cli()) {
+			ob_start('nl2br');
+		}
+
+		if (!$endpointPaths) {
+			$endpointPaths = static::sync_endpoints();
+		}
+		if (!is_array($endpointPaths)) {
+			$endpointPaths = [$endpointPaths];
+		}
+		$endpoints = [];
+		// first gather all the endpoints passed or from config and assembled the 'active' ones
+		foreach ($endpointPaths as $endpointPath => $active) {
+			// this could be an array of endpoints to sync or a map of [ endpoint path => truthish to sync ]
+			$doSync = is_numeric($endpointPath) ? true : $active;
+			$endpointPath = is_numeric($endpointPath) ? $active : $endpointPath;
+
+			if ($doSync) {
+				/** @var EndpointInterface $endpoint */
+				if ($endpoint = static::endpoint($endpointPath)) {
+					$endpoints[ $endpointPath ] = $endpoint;
+				}
+			}
+		}
+		if (count($endpoints) != count($endpointPaths)) {
+			// die if we couldn't find all the endpoints requested, there may be dependancies
+			throw new Exception("Couldn't locate all requested endpoints to sync, aborting sync");
+		}
+		// now get the endpoints to sync themselves
+		/** @var EndpointInterface $endpoint */
+		foreach ($endpoints as $endpointPath => $endpoint) {
+
+			$endpoint->sync();
+		}
+		if (!Director::is_cli()) {
+			ob_end_flush();
+		}
+		static::log_message('Ending sync', \SS_Log::INFO);
+
+	}
+
+	/**
+	 * @return array either of endpoint paths or endpoint path => sync flag from config.sync_endpoints.
+	 */
+	protected static function sync_endpoints() {
+		return static::config()->get('sync_endpoints');
+	}
+
 	/**
 	 * Test if this api services a particular endpoint.
 	 *
 	 * @param $service
 	 * @return array|bool info if endpoint is found, otherwise false.
 	 */
-	public function match($service) {
-		return $this->service() == $service;
+	public function match(EndpointInterface $service) {
+		return $this->service() == $service->getPath();
 	}
 
 	/**
@@ -132,13 +200,13 @@ class Api extends Object
 	/**
 	 * Return a configured endpoint.
 	 *
-	 * @param $path
+	 * @param string $path
 	 * @return EndpointInterface
 	 */
-	public function endpoint($path) {
+	public static function endpoint($path) {
 		foreach (static::endpoints() as $testPath => $config) {
 			if (Endpoint::match($testPath, $path)) {
-				return $this->makeEndpoint($path, $config);
+				return static::make_endpoint($path, $config);
 			}
 		}
 		return null;
@@ -162,7 +230,7 @@ class Api extends Object
 					// we have matched by class, now see if the rest of the endpoint path matches
 					// using action and wildcard
 					if (Endpoint::match($path, $testPath)) {
-						return $this->makeEndpoint($path, $config);
+						return static::make_endpoint($path, $config);
 					}
 				}
 			}
@@ -193,19 +261,19 @@ class Api extends Object
 	 * @return EndpointInterface
 	 * @throws Exception
 	 */
-	public function makeEndpoint($path, array $config, $decodeInfo = true) {
-		$config = $this->decode_config($config, true);
+	public static function make_endpoint($path, array $config, $decodeInfo = true) {
+		$config = static::decode_config($config, true);
 
 		$endpointClassName = isset($config['endpoint'])
 			? $config['endpoint']
-			: substr(get_class($this), 0, -3) . 'Endpoint';
+			: substr(get_called_class(), 0, -3) . 'Endpoint';
 
 		if (!ClassInfo::exists($endpointClassName)) {
 			// TODO handle endpoint not existing, maybe work with QuaffEndpoint
 			throw new Exception("Endpoint class '$endpointClassName' doesn't exist");
 		}
 
-		return Injector::inst()->create($endpointClassName, $path, $this->decode_config($config, $decodeInfo));
+		return Injector::inst()->create($endpointClassName, $path, static::decode_config($config, $decodeInfo));
 	}
 
 	/**

@@ -1,6 +1,6 @@
 <?php
 
-namespace Quaff;
+namespace Quaff\CMS;
 
 class ModelAdmin extends \ModelAdmin {
 
