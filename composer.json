@@ -19,7 +19,7 @@
 		"composer/installers": "*",
 		"silverstripe/framework": ">=3.1",
 		"guzzlehttp/guzzle": "6.2.x",
-		"crackerjackdigital/silverstripe-modular": "dev-develop"
+		"crackerjackdigital/silverstripe-modular": "dev-master"
 	},
 	"extra": {
 		"installer-name": "quaff"
