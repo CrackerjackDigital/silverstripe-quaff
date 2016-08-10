@@ -128,7 +128,7 @@ abstract class Response extends Object implements ResponseInterface {
 	protected function items($options = null) {
 		static $models;
 
-		if ($models === false) {
+		if (!$models) {
 			$models = new ArrayList();
 
 			if ($this->isValid()) {
@@ -293,7 +293,10 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @return array
 	 */
 	public function data($key = null) {
-		return array_key_exists($key, $this->rawData) ? $this->rawData[ $key ] : null;
+		if (func_num_args()) {
+			return array_key_exists($key, $this->rawData ?: []) ? $this->rawData[ $key ] : null;
+		}
+		return $this->rawData;
 	}
 
 	/**
@@ -303,7 +306,10 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @return array
 	 */
 	public function meta($key = null) {
-		return array_key_exists($key, $this->metaData) ? $this->metaData[ $key ] : null;
+		if (func_num_args()) {
+			return array_key_exists($key, $this->metaData ?: []) ? $this->metaData[ $key ] : null;
+		}
+		return $this->meta;
 	}
 
 	public function getURI() {

@@ -2,10 +2,11 @@
 
 namespace Quaff\Endpoints;
 
-use Modular\Helpers\Debugger;
+use Modular\Debugger;
 
 use Modular\Model;
 use Modular\Object;
+use Modular\tokens;
 use Quaff\Interfaces\Quaffable;
 use Quaff\Responses\Response;
 use Quaff\Transport\Transport;
@@ -16,6 +17,8 @@ use Modular\Controller;
 use Injector;
 
 abstract class Endpoint extends Object implements EndpointInterface {
+	use tokens;
+
 	const FormatKeys   = 1;
 	const FormatValues = 2;
 	const FormatBoth   = 3;
@@ -61,20 +64,17 @@ abstract class Endpoint extends Object implements EndpointInterface {
 		$this->init();
 
 		/** @var \Quaff\Interfaces\Response $response */
-		$response = $this->quaff();
+		if ($response = $this->quaff()) {
 
-		if ($response->isValid()) {
-			if ($items = $response->getItems()) {
+			if ($response->isValid()) {
+				if ($items = $response->getItems()) {
 
-				if ($items->count()) {
-					static::log_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
-
-					foreach ($items as $item) {
-						$this->extend('beforeQuaffItemWrite', $item, $items, $response);
-
-						$item->write(true);
-
-						$this->extend('afterQuaffItemWrite', $item, $items, $response);
+					if ($items->count()) {
+						static::log_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
+						/** @var Model $item */
+						foreach ($items as $item) {
+							$item->write();
+						}
 					}
 				}
 			}
@@ -86,23 +86,25 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	/**
 	 * Call the remote endpoint and return a response.
 	 *
-	 * @param array     $params
+	 * @param array     $queryParams
 	 * @param Quaffable $model to provide as a template when building the uri to call
 	 * @return Response
 	 * @api
 	 */
-	public function quaff(array $params = [], $model = null) {
-		$this->extend('startQuaff', $params, $model);
+	public function quaff(array $queryParams = [], $model = null) {
+		$this->extend('startQuaff', $queryParams, $model);
 
 		/** @var TransportInterface $transport */
 		$transport = Transport::factory(
 			$this,
-			$params
+			$queryParams
 		);
+
+		$uri = $this->uri($queryParams, $model);
 
 		/** @var Response $response */
 		$nativeResponse = $transport->get(
-			$this->uri($params, $model)
+			$uri
 		);
 
 		$response = $this->responseFactory(
@@ -126,8 +128,9 @@ abstract class Endpoint extends Object implements EndpointInterface {
 			$this->getURL()
 		);
 		$queryParams = $this->queryParams($params, $model);
+		$uriParams = $this->uriParams();
 
-		return self::build_query($url, $queryParams);
+		return $this->prepareURI($url, $uriParams, $queryParams);
 	}
 
 	/**
@@ -139,12 +142,6 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 */
 	protected function queryParams(array $params = [], $model = null) {
 		$fields = [];
-
-		// merge provided params into the Endpoints default params, provided take preference
-		$params = array_merge(
-			$this->uriParams(),
-			$params
-		);
 
 		if (!$model) {
 			$model = singleton($this->getModelClass());
@@ -170,15 +167,15 @@ abstract class Endpoint extends Object implements EndpointInterface {
 				}
 			);
 		}
-		$this->extend('updateQueryParameters', $params, $model);
-
-		$query = array_merge(
+		$params = array_merge(
 			static::get_config_setting('default_params', $this->method()) ?: [],
 			$fields,
 			$params
 		);
 
-		return $query;
+		$this->extend('updateQueryParameters', $params, $model);
+
+		return $params;
 	}
 
 	/**
@@ -186,15 +183,21 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 *
 	 * TODO handle arrays as values
 	 *
-	 * @param       $url
-	 * @param array $parameters
+	 * @param string $url
+	 * @param array  $queryParams
 	 * @return string
 	 */
-	protected static function build_query($url, array $parameters) {
+	protected function prepareURI($url, array $urlParams, array $queryParams) {
 		$query = '';
-		foreach ($parameters as $name => $value) {
+		foreach ($queryParams as $name => $value) {
 			$query .= "&$name=$value";
 		}
+		// merge provided params into the Endpoints default params, provided take preference
+		$url = $this->detokenise(
+			$url,
+			$urlParams
+		);
+
 		return $url . '?' . substr($query, 1);
 	}
 

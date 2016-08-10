@@ -5,13 +5,10 @@ namespace Quaff\Transport;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Modular\debugging;
-use Modular\Helpers\Debugger;
+use Modular\Debugger;
 use Modular\options;
 use Quaff\Endpoints\Endpoint;
-use Quaff\Exceptions\Exception;
-use Quaff\Exceptions\Transport;
-use Quaff\Responses\Error;
-use Quaff\Responses\OK;
+use Quaff\Exceptions\Transport as Exception;
 
 class Guzzle extends Transport {
 	use debugging;
@@ -66,12 +63,8 @@ class Guzzle extends Transport {
 
 			return static::make_response($this->endpoint, $response);
 
-		} catch (Transport $e) {
-			// rethrow it
-			throw $e;
-
 		} catch (Exception $e) {
-			throw new Transport($e->getMessage(), $e->getCode(), $e);
+			throw new Exception($e->getMessage(), $e->getCode(), $e);
 		}
 	}
 

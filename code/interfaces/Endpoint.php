@@ -19,11 +19,11 @@ interface Endpoint {
 	public function sync();
 
 	/**
-	 * @param array     $params
+	 * @param array     $queryParams
 	 * @param Quaffable $model
 	 * @return Response
 	 */
-	public function quaff(array $params = [], $model = null);
+	public function quaff(array $queryParams = [], $model = null);
 
 	public function version();
 

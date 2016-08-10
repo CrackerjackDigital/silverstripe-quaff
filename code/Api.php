@@ -7,9 +7,7 @@ namespace Quaff;
 use ClassInfo;
 use Director;
 use Injector;
-
 use Modular\debugging;
-use Modular\Debugger;
 use Modular\Object as Object;
 use Quaff\Endpoints\Endpoint;
 use Quaff\Exceptions\Exception;
@@ -18,8 +16,7 @@ use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Locator as LocatorInterface;
 
 abstract class Api extends Object
-	implements ApiInterface, LocatorInterface
-{
+	implements ApiInterface, LocatorInterface {
 	use debugging;
 
 	/** @var string provide in concrete api implementation as it is the name by which this api can be located by */
@@ -44,9 +41,9 @@ abstract class Api extends Object
 	private static $error_log_email_address = '';
 
 	private static $sync_endpoints = [
-/*
-        'list/some-endpoint' => true
- */
+		/*
+				'list/some-endpoint' => true
+		 */
 	];
 
 	private static $endpoints = [ /*
@@ -257,23 +254,21 @@ abstract class Api extends Object
 	 *
 	 * @param array $path
 	 * @param array $config
-	 * @param bool  $decodeInfo if true then base endpoints will also be resolved, otherwise not
+	 * @param bool  $dereferenceBase if true then base endpoints will also be resolved, otherwise not
 	 * @return EndpointInterface
 	 * @throws Exception
 	 */
-	public static function make_endpoint($path, array $config, $decodeInfo = true) {
+	public static function make_endpoint($path, array $config, $dereferenceBase = true) {
 		$config = static::decode_config($config, true);
 
-		$endpointClassName = isset($config['endpoint'])
+		// TODO: is there a better way to do this rather than a convention?
+		$endpointClassName = $config['endpoint']
 			? $config['endpoint']
-			: substr(get_called_class(), 0, -3) . 'Endpoint';
+			: str_replace('\\Apis\\', '\\Endpoints\\', get_called_class());
 
-		if (!ClassInfo::exists($endpointClassName)) {
-			// TODO handle endpoint not existing, maybe work with QuaffEndpoint
-			throw new Exception("Endpoint class '$endpointClassName' doesn't exist");
+		if (ClassInfo::exists($endpointClassName)) {
+			return Injector::inst()->create($endpointClassName, $path, static::decode_config($config, $dereferenceBase));
 		}
-
-		return Injector::inst()->create($endpointClassName, $path, static::decode_config($config, $decodeInfo));
 	}
 
 	/**
@@ -284,7 +279,7 @@ abstract class Api extends Object
 	 * @param bool  $dereferenceBase
 	 * @return array
 	 */
-	protected function decode_config(array $config, $dereferenceBase = false) {
+	protected static function decode_config(array $config, $dereferenceBase = false) {
 		$merged = [
 			'accept_type' => static::config()->get('accept_type'),
 			'url'         => null,
@@ -294,9 +289,9 @@ abstract class Api extends Object
 
 		if ($dereferenceBase && isset($config['base'])) {
 
-			if ($endpoint = $this->endpoint($config['base'])) {
+			if ($parentEndpoint = static::endpoint($config['base'])) {
 
-				$baseInfo = $endpoint->getInfo();
+				$baseInfo = $parentEndpoint->getInfo();
 				$merged = array_merge(
 					$merged,
 					$baseInfo
