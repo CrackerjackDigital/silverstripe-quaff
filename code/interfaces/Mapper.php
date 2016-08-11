@@ -53,7 +53,7 @@ interface Mapper {
 	 * @param bool             $skipNulls
 	 * @return mixed
 	 */
-	public function spout($fromModelOrArray, array $fieldMap, $skipNulls);
+//	public function spout($fromModelOrArray, array $fieldMap, $skipNulls);
 
 	/**
 	 * Looks up $path in data and returns value (setting $found to true if so).
@@ -75,7 +75,7 @@ interface Mapper {
 	 * @return mixed
 	 * @internal param $path
 	 */
-	public static function build(Mapper $mapper, $localName, $value, array &$data);
+//	public static function build(Mapper $mapper, $localName, $value, array &$data);
 
 	/**
 	 * Paths generally have some form of delimiter, e.g. a '.' or '/'
