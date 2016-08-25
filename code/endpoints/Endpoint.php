@@ -70,13 +70,15 @@ abstract class Endpoint extends Object implements EndpointInterface {
 				if ($items = $response->getItems()) {
 
 					if ($items->count()) {
-						static::log_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
+						static::debug_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
 						/** @var Model $item */
 						foreach ($items as $item) {
 							$item->write();
 						}
 					}
 				}
+			} else {
+				$this->debug_error("Invalid response with code: " . $response->getErrorMessage());
 			}
 		}
 		$this->extend('endSync', $response, $items);
@@ -102,15 +104,9 @@ abstract class Endpoint extends Object implements EndpointInterface {
 
 		$uri = $this->uri($queryParams, $model);
 
-		/** @var Response $response */
-		$nativeResponse = $transport->get(
+		$response = $transport->get(
 			$uri
 		);
-
-		$response = $this->responseFactory(
-			$nativeResponse
-		);
-		$this->extend('endQuaff', $response);
 		return $response;
 	}
 
@@ -210,7 +206,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 */
 	public function modelFactory(array $initData = null, $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
-			return Injector::inst()->create($modelClass, $initData);
+			return Injector::inst()->create($modelClass);
 		}
 		return null;
 	}
@@ -224,7 +220,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 */
 	public function responseFactory($apiData) {
 		if ($responseClass = $this->getResponseClass()) {
-			return Injector::inst()->create($responseClass, $this, $apiData);
+			return Injector::inst()->create($responseClass, $this, $apiData, $metaData);
 		}
 		return null;
 	}

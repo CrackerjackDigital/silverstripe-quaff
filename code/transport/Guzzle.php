@@ -58,8 +58,8 @@ class Guzzle extends Transport {
 				$uri
 			);
 
-			self::log_message('sync', Debugger::DebugInfo);
-			self::log_message($response->getBody(), Debugger::DebugTrace);
+			self::debug_message('sync', Debugger::DebugInfo);
+			self::debug_message($response->getBody(), Debugger::DebugTrace);
 
 			return static::make_response($this->endpoint, $response);
 

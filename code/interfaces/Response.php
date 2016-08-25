@@ -2,6 +2,18 @@
 namespace Quaff\Interfaces;
 
 interface Response {
+
+	/**
+	 * Return a response code, e.g. for HTTP this would be the Response Code
+	 * @return mixed
+	 */
+	public function getResultCode();
+
+	/**
+	 * Return an error message if available.
+	 * @return string
+	 */
+	public function getResultMessage();
 	/**
 	 * Check if the request was invalid, e.g. bad/missing parameters but we got something back from API.
 	 *

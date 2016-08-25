@@ -3,29 +3,57 @@ namespace Quaff\Tasks;
 
 use BuildTask;
 use Config;
+use Modular\Debugger;
+use Modular\debugging;
 use Modular\enabler;
 use Quaff\Api;
 
 abstract class SyncTask extends BuildTask {
 	use enabler;
+	use debugging;
 
-	const ApiClass = 'ShuttlerockApi';
-	/** overload to provide the name of the endpoint class to sync, or leave blank to call the api sync */
-	const EndpointPath = '';
+	// name of Api service as Injector see's it, e.g 'ShuttlerockApi'
+	const ServiceName = '';
 
-	public function run($request) {
-		if ($this->enabled()) {
-			/** @var Api $api */
-			$api = \Injector::inst()->create(static::ApiClass);
-			$api->sync(static::EndpointPath);
+	// endpoints to sync on the Api service
+	private static $endpoints = [ 'sync:entries' ];
 
-		} else {
-			die(__CLASS__ . ' is not enabled');
-		}
+	// set to SS_Log::INFO = 6 for logging full information, SS_Log::ERR = 3 for just errors.
+	private static $log_level = \SS_Log::INFO;
+
+	private static $log_email = '';
+
+	private static $log_file = '';
+
+	/**
+	 * Override to use enabler.enabled instead of BuildTask.
+	 * @return bool
+	 */
+	public function isEnabled() {
+		return $this->enabled();
 	}
 
-	public function sequence(array $toReorder) {
-		return Config::inst()->get(get_called_class(), 'sequence') ?: count($toReorder) + 1;
+	/**
+	 * Iterate through config.endpoints, find the endpoint on the service and call sync on the Api for that endpoint.
+	 * @param $request
+	 * @throws \Quaff\Exceptions\Exception
+	 */
+	public function run($request) {
+		$this->debugger($this->config()->get('log_level'))
+			->toEmail($this->config()->get('log_email'), Debugger::DebugNotice)
+			->toFile($this->config()->get('log_file'), Debugger::DebugInfo);
+
+		if ($this->enabled()) {
+			/** @var Api $api */
+			$api = \Injector::inst()->create(static::ServiceName);
+
+			foreach ($this->config()->get('endpoints') as $endpoint) {
+				$api->sync($endpoint);
+			}
+
+		} else {
+			$this->debug_warn('disabled');
+		}
 	}
 
 }

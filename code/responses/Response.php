@@ -2,7 +2,7 @@
 namespace Quaff\Responses;
 
 use ArrayList;
-use Modular\NotImplementedException;
+use Modular\Exceptions\NotImplemented;
 use Modular\Object;
 use Quaff\Exceptions\Response as Exception;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
@@ -26,8 +26,8 @@ abstract class Response extends Object implements ResponseInterface {
 
 	const RawDataArray = 'array';
 
-	const OKMessage   = 'OK';
-	const FailMessage = 'Failed';
+	const GenericOKMessage   = 'OK';
+	const GenericFailMessage = 'Failed (no message available)';
 
 	const ContentTypeJSON = 'json';
 	const ContentTypeXML  = 'xml';
@@ -63,7 +63,7 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @param string            $rawData  e.g. body of HTTP response
 	 * @param array             $metaData extra information such as headers
 	 */
-	public function __construct(EndpointInterface $endpoint, $rawData, $metaData = null) {
+	public function __construct(EndpointInterface $endpoint, $rawData, $metaData) {
 		$this->endpoint = $endpoint;
 		$this->rawData = $rawData;
 		$this->metaData = $metaData;
@@ -91,7 +91,7 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @return string|null
 	 */
 	public function getResultMessage() {
-		return $this->meta('ResultMessage') ?: self::FailMessage;
+		return $this->meta('ResultMessage') ?: self::GenericFailMessage;
 	}
 
 	/**
@@ -122,7 +122,7 @@ abstract class Response extends Object implements ResponseInterface {
 	 *
 	 * @param  array|int $options
 	 * @return \ArrayList
-	 * @throws \Modular\NotImplementedException
+	 * @throws \Modular\Exceptions\NotImplemented
 	 * @throws \Quaff\Exceptions\Response
 	 */
 	protected function items($options = null) {
@@ -140,6 +140,8 @@ abstract class Response extends Object implements ResponseInterface {
 					throw new Exception("Bad content type '$contentType'");
 				}
 				foreach ($items as $item) {
+					$temp = $this->endpoint->modelFactory($item, $options);
+					
 					/** QuaffModelInterface */
 					if (!$model = $this->findModel($item, $options)) {
 						$model = $this->endpoint->modelFactory($item, $options);
@@ -159,16 +161,21 @@ abstract class Response extends Object implements ResponseInterface {
 	 * Content types may have character encoding so just do a rude find of the expected content type in the response
 	 * content type starting from the first character in lower-case.
 	 *
-	 * @param string $contentType we are looking to decode
+	 * @param string|array $contentTypes we are looking to decode, could be an array if multiple content types were returned
 	 * @return int|null the ContentTypeACB constant for the string content type or null if not found
 	 */
-	protected static function decode_content_type($contentType) {
-		$contentTypes = static::config()->get('content_types');
+	protected static function decode_content_type($contentTypes) {
+		// convert to array if string so can handle the same
+		$contentTypes = is_array($contentTypes) ? $contentTypes : [$contentTypes];
 
-		foreach ($contentTypes as $type => $signatures) {
-			foreach ($signatures as $signature) {
-				if (0 === strpos(strtolower($contentType), strtolower($signature))) {
-					return $type;
+		$expectedTypes = static::config()->get('content_types');
+
+		foreach ($contentTypes as $contentType) {
+			foreach ($expectedTypes as $expectedType => $signatures) {
+				foreach ($signatures as $signature) {
+					if (0 === strpos(strtolower($contentType), strtolower($signature))) {
+						return $expectedType;
+					}
 				}
 			}
 		}
@@ -273,10 +280,10 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @param array $data
 	 * @param       $flags
 	 * @return \DataObject|null
-	 * @throws \Modular\NotImplementedException
+	 * @throws \Modular\Exceptions\NotImplemented
 	 */
 	protected function findModel(array $data, $flags) {
-		throw new NotImplementedException("Please provide implementation in concrete class");
+		throw new NotImplemented("Please provide implementation in concrete class");
 	}
 
 	/**

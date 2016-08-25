@@ -20,7 +20,7 @@ class OK extends Response {
 	}
 
 	public function getResultMessage() {
-		return self::OKMessage;
+		return self::GenericOKMessage;
 	}
 
 }
