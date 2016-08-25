@@ -6,7 +6,6 @@ namespace Quaff\Extensions\Model;
 
 use Modular\bitfield;
 use Modular\config;
-use Modular\Model;
 use Modular\ModelExtension;
 use Quaff\Endpoints\Endpoint;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
