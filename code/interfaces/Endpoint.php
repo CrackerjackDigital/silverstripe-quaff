@@ -1,6 +1,8 @@
 <?php
 namespace Quaff\Interfaces;
 
+use Modular\Model;
+use Psr\Http\Message\ResponseInterface;
 use Quaff\Responses\Response;
 
 interface Endpoint {
@@ -14,6 +16,7 @@ interface Endpoint {
 
 	/**
 	 * Calls remote uri and creates models in database.
+	 *
 	 * @return mixed
 	 */
 	public function sync();
@@ -42,12 +45,27 @@ interface Endpoint {
 	public static function match($pattern, $to);
 
 	/**
-	 * @param array|null $data
-	 * @param null       $flags
-	 * @return Model
+	 * Find an existing model of the type this endpoint returns which matches the provided raw api response data.
+	 *
+	 * @param      $apiData
+	 * @param null $flags
+	 * @return \Modular\Model|null
 	 */
-	public function modelFactory(array $data = null, $flags = null);
+	public function findModel($apiData, $flags = null);
 
+	/**
+	 * Create a model from the passed raw api response data.
+	 *
+	 * @param      $apiData
+	 * @param null $flags
+	 * @return \Modular\Model
+	 */
+	public function modelFactory($apiData, $flags = null);
+
+	/**
+	 * @param $apiData
+	 * @return ResponseInterface
+	 */
 	public function responseFactory($apiData);
 
 	/**
@@ -59,6 +77,7 @@ interface Endpoint {
 
 	/**
 	 * Return the path to the item collection in the return data, e.g. 'response.items' or '/response/items' for json and xml respectively.
+	 *
 	 * @return mixed
 	 */
 	public function getItemPath();

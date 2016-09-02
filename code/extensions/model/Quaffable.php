@@ -13,8 +13,7 @@ use Quaff\Interfaces\Quaffable as QuaffableInterface;
 use Quaff\Mappers\Mapper;
 
 class Quaffable extends ModelExtension
-	implements QuaffableInterface
-{
+	implements QuaffableInterface {
 	use config;
 	use bitfield;
 
@@ -22,8 +21,8 @@ class Quaffable extends ModelExtension
 	 * Import from $data into object for the $endpoint, does not write the model.
 	 *
 	 * @param EndpointInterface $endpoint
-	 * @param array                  $data
-	 * @param int                    $options
+	 * @param array             $data
+	 * @param int               $options
 	 * @return mixed|null
 	 */
 	public function quaff(EndpointInterface $endpoint, $data, $options = self::DefaultQuaffOptions) {
@@ -35,7 +34,7 @@ class Quaffable extends ModelExtension
 			// notify the model they're about to be quaffed
 			$this->owner()->extend('beforeQuaff', $endpoint, $mapper, $data);
 
-			$result = $mapper->quaff($data, $this->owner(), $this->quaffMapForEndpoint($endpoint), $options);
+			$result = $mapper->quaff($data, $this->owner(), $endpoint, $options);
 
 			// notify the model they're were quaffed
 			$this->owner()->extend('afterQuaff', $endpoint, $mapper, $data);
@@ -54,11 +53,7 @@ class Quaffable extends ModelExtension
 	public function toMap() {
 		return $this->owner()->toMap();
 	}
-/*
-	public function endpoint($endpoint) {
-		return $this->ownerConfigSetting('quaff_map', $endpoint) ?: [];
-	}
-*/
+
 	public function quaffMapForEndpoint(EndpointInterface $endpoint, $options = self::MapDeep) {
 		$maps = $this->owner()->config()->get('quaff_map');
 		$path = $endpoint->getPath();
@@ -83,22 +78,15 @@ class Quaffable extends ModelExtension
 		return $newMap;
 	}
 
-	public function quaffMapValuesToFields(array $values, $prefix = '', $suffix = '') {
-		foreach ($values as $name => $value) {
-			$fieldName = $prefix . $name . $suffix;
-			$this->owner()->$fieldName = $value;
-		}
-	}
-
 	/**
 	 * Given local and remote paths for mapping decompose into an array usefull during the mapping process.
 	 *
-	 * @param string $dataPath in incoming data, e.g. a dot path on the left of a quaff_map configuration map
+	 * @param string $dataPath  in incoming data, e.g. a dot path on the left of a quaff_map configuration map
 	 * @param string $modelPath in SilverStripe e.g a field name on the right of a quaff_map
-	 * @return array [ field name, foreign key name, tag field flag, method ]
+	 * @return array see comments on return array
 	 */
 	public static function decode_map($dataPath, $modelPath) {
-		$tagField = $foreignKey = $method = $relationship = null;
+		$foreignKey = $tagField = $method = $relationship = null;
 
 		$delimiter = Mapper::path_delimiter();
 
@@ -125,13 +113,27 @@ class Quaffable extends ModelExtension
 			$dataPath .= ".$method";
 		}
 		return [
-			$dataPath,
-			$modelPath,
-			$foreignKey,
-			$tagField,
-			$method,
-			$relationship,
+			$dataPath,          // processed path in the api data
+			$modelPath,         // processed path in the model (a field name)
+			$foreignKey,        // set if search field used to match existing models
+			$tagField,          // set of tags to concatenate
+			$method,            // method to call for this field
+			$relationship,      // relationship to use for this field
 		];
+	}
+
+	/**
+	 * Set fields on the extended model from the values, optionally prepending and appending prefix and suffix respectively to the field name being set.
+	 *
+	 * @param array  $values
+	 * @param string $prefix
+	 * @param string $suffix
+	 */
+	public function quaffMapValuesToFields(array $values, $prefix = '', $suffix = '') {
+		foreach ($values as $name => $value) {
+			$fieldName = $prefix . $name . $suffix;
+			$this->owner()->$fieldName = $value;
+		}
 	}
 
 }

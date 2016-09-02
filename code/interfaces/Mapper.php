@@ -41,11 +41,11 @@ interface Mapper {
 	/**
 	 * @param array      $fromData
 	 * @param DataObject $toModel
-	 * @param array      $fieldMap
+	 * @param Endpoint   $endpoint
 	 * @param int        $options
 	 * @return mixed
 	 */
-	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = self::DefaultOptions);
+	public function quaff($fromData, DataObject $toModel, Endpoint $endpoint, $options = self::DefaultOptions);
 
 	/**
 	 * @param DataObject|array $fromModelOrArray

@@ -140,15 +140,10 @@ abstract class Response extends Object implements ResponseInterface {
 					throw new Exception("Bad content type '$contentType'");
 				}
 				foreach ($items as $item) {
-					$temp = $this->endpoint->modelFactory($item, $options);
-					
 					/** QuaffModelInterface */
 					if (!$model = $this->findModel($item, $options)) {
-						$model = $this->endpoint->modelFactory($item, $options);
+						$model = $this->modelFactory($item, $options);
 					}
-					// call this directly instead of extend.
-					$model->quaff($this->endpoint, $item, $options);
-
 					$models->push($model);
 				}
 
@@ -263,27 +258,27 @@ abstract class Response extends Object implements ResponseInterface {
 	}
 
 	/**
-	 * Call through to Endpoint, allow overload here. Returns a new model optionally initialised with passed data.
-	 *
-	 * @param array $data
-	 * @param int   $flags
-	 * @return \Quaff\Interfaces\Mapper
-	 */
-	protected function newModel(array $data = null, $flags = null) {
-		return $this->getEndpoint()->modelFactory($data);
-	}
-
-	/**
 	 * Return an existing model from the provided item data or return null if not found. Override in implementation to
-	 * find an existing model. By default returns null.
+	 * find an existing model.
 	 *
 	 * @param array $data
 	 * @param       $flags
 	 * @return \DataObject|null
 	 * @throws \Modular\Exceptions\NotImplemented
 	 */
-	protected function findModel(array $data, $flags) {
-		throw new NotImplemented("Please provide implementation in concrete class");
+	protected function findModel($data, $flags = null) {
+		return $this->getEndpoint()->findModel($data, $flags);
+	}
+
+	/**
+	 * Call through to Endpoint, allow overload here. Returns a new model optionally initialised with passed data.
+	 *
+	 * @param array $data
+	 * @param int   $flags
+	 * @return \Quaff\Interfaces\Mapper
+	 */
+	protected function modelFactory($data, $flags = null) {
+		return $this->getEndpoint()->modelFactory($data, $flags);
 	}
 
 	/**

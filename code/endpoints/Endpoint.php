@@ -7,6 +7,7 @@ use Modular\Debugger;
 use Modular\Model;
 use Modular\Object;
 use Modular\tokens;
+use Quaff\Exceptions\Exception;
 use Quaff\Interfaces\Quaffable;
 use Quaff\Responses\Response;
 use Quaff\Transport\Transport;
@@ -198,15 +199,55 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	}
 
 	/**
+	 * Attempts to find an existing model using the rules in the models quaff_map.
+	 *
+	 * @param      $apiData
+	 * @param null $flags
+	 * @return \Modular\Model|null
+	 * @throws \Quaff\Exceptions\Exception
+	 */
+	public function findModel($apiData, $flags = null) {
+		if (!$modelClass = $this->getModelClass()) {
+			throw new Exception("No model class");
+		}
+		/** @var Model|\Quaff\Extensions\Model\Quaffable $temp */
+		if ($temp = singleton($modelClass)) {
+			// map api data into temp so can use for filters
+			$temp->quaff($this, $apiData, Quaffable::MapOwnFieldsOnly);
+
+			if ($map = $temp->quaffMapForEndpoint($this)) {
+				/** @var \DataList $query */
+				$query = $modelClass::get();
+
+				foreach ($map as $modelPath => $info) {
+					list($dataPath, $modelPath, $matches) = $info;
+					if ($matches) {
+						$query = $query->filter($modelPath, $temp->$modelPath);
+					}
+				}
+				return $query->count() == 1 ? $query->first() : null;
+			}
+		}
+	}
+
+	/**
 	 * Return a new instance of the model class returned from this endpoint with optional data set.
 	 *
-	 * @param array $initData
-	 * @param null  $flags
+	 * @param array    $apiData
+	 * @param int|null $flags
 	 * @return \Modular\Model|null
 	 */
-	public function modelFactory(array $initData = null, $flags = null) {
+	public function modelFactory($apiData, $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
-			return Injector::inst()->create($modelClass);
+			/** @var \Shuttlerock\Models\Model|Quaffable $model */
+			if ($model = Injector::inst()->create($modelClass)) {
+
+				if (func_num_args() === 1) {
+					$model->quaff($this, $apiData);
+				} else {
+					$model->quaff($this, $apiData, $flags);
+				}
+			}
 		}
 		return null;
 	}

@@ -5,7 +5,7 @@ namespace Quaff\Interfaces;
  * Interface to add to DataObjects which support Quaff mapping. This is not declared directly on models as it is
  * implemented by QuaffMappableExtension , however is useful to use as a return type or parameter type hint.
  */
-interface Quaffable extends Model {
+interface Quaffable {
 	const EncodeNone = 1;       // don't change values
 	const EncodeJSON = 2;       // encode values for json
 	const EncodeURL  = 4;        // encode values using urlencode
@@ -16,6 +16,8 @@ interface Quaffable extends Model {
 	const MapDeep          = 64;
 	const MapOwnFieldsOnly = 128;
 
+	const DefaultQuaffOptions = 72; // self::DecodeNone | self::MapDeep
+
 	/**
 	 * From DataObject but we use it so declare it
 	 *
@@ -24,21 +26,22 @@ interface Quaffable extends Model {
 	public function toMap();
 
 	/**
-	 * Returns the map for a given endpoint.
+	 * Import data to the model for the endpoint.
 	 *
-	 * @param Endpoint $endpoint
+	 * @param Endpoint $endpoint such as 'get/online-activities'
+	 * @param array    $data     to be imported via the map found for the endpoint
 	 * @param int      $options
-	 * @return
+	 * @return mixed
 	 */
-	public function quaffMapForEndpoint(Endpoint $endpoint, $options = self::MapDeep);
+	public function quaff(Endpoint $endpoint, $data, $options = self::DefaultQuaffOptions);
 
 	/**
-	 * TODO move to spout module
-	 * Return an array of data mapped via the map found for the provided endpoint.
+	 * Returns the map for a given endpoint for the extended model.
 	 *
 	 * @param Endpoint $endpoint
 	 * @param int      $options
 	 * @return array
 	 */
-//	public function spout(QuaffEndpointInterface $endpoint, $options = self::DefaultSpoutOptions);
+	public function quaffMapForEndpoint(Endpoint $endpoint, $options = self::MapDeep);
+
 }

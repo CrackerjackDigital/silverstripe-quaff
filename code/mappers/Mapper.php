@@ -40,33 +40,36 @@ abstract class Mapper extends Object
 	 * Given data in a nested array, a field map to a flat structure and a DataObject to set field values
 	 * on populate the model.
 	 *
-	 * @param array|string $fromData
-	 * @param DataObject   $toModel  - model to receive parsed value as field values
-	 * @param array        $fieldMap of data path to model path
-	 * @param int          $options  bitfield of or'd self::OptionXYZ flags
+	 * @param array|string      $fromData
+	 * @param DataObject        $toModel - model to receive parsed value as field values
+	 * @param EndpointInterface $endpoint
+	 * @param int               $options bitfield of or'd self::OptionXYZ flags
 	 * @return int - number of fields found for mapping
 	 * @throws Mapping
 	 */
-	public function quaff($fromData, DataObject $toModel, array $fieldMap, $options = Mapper::DefaultOptions) {
-		$fromData = $this->decode($fromData);
-		$numFound = 0;
+	public function quaff($fromData, DataObject $toModel, EndpointInterface $endpoint, $options = Mapper::DefaultOptions) {
+		$numFieldsFound = 0;
 
-		foreach ($fieldMap as $fieldInfo) {
-			$found = false;
+		if ($map = $toModel->quaffMapForEndpoint($endpoint)) {
+			$fromData = $this->decode($fromData);
 
-			// data path is the first value in tuple
-			$dataPath = $fieldInfo[0];
+			foreach ($map as $fieldInfo) {
+				$found = false;
 
-			$value = static::traverse($dataPath, $fromData, $found);
+				// data path is the first value in tuple
+				$dataPath = $fieldInfo[0];
 
-			if ($found) {
-				$this->found($value, $toModel, $fieldInfo, $options);
-				$numFound++;
-			} else {
-				$this->notFound($toModel, $fieldInfo, $options);
+				$value = static::traverse($dataPath, $fromData, $found);
+
+				if ($found) {
+					$this->found($value, $toModel, $fieldInfo, $options);
+					$numFieldsFound++;
+				} else {
+					$this->notFound($toModel, $fieldInfo, $options);
+				}
 			}
 		}
-		return $numFound;
+		return $numFieldsFound;
 	}
 
 	/**
@@ -97,7 +100,7 @@ abstract class Mapper extends Object
 	 * A value was found so map it to the DataObject.
 	 *
 	 * @param                           $value
-	 * @param DataObject|Helper         $toModel
+	 * @param DataObject|Quaffable      $toModel
 	 * @param                           $fieldInfo
 	 * @param  int                      $options bitfield of or'd self::OptionXYZ flags
 	 * @throws Mapping
@@ -105,12 +108,12 @@ abstract class Mapper extends Object
 	 * @throws null
 	 */
 	protected function found($value, DataObject $toModel, $fieldInfo, $options = self::DefaultOptions) {
-		list($localPath, , , $isTagField, $method, $relationship) = $fieldInfo;
+		list($dataPath, $modelPath, , $isTagField, $method, $relationship) = $fieldInfo;
 
 		$delimiter = static::path_delimiter();
 
 		if ($method) {
-			list($localPath) = explode($delimiter, $localPath);
+			list($dataPath) = explode($delimiter, $dataPath);
 
 			if ($toModel->hasMethod('quaffMap')) {
 				$internallyHandled = false;
@@ -123,11 +126,14 @@ abstract class Mapper extends Object
 		}
 
 		if (is_array($value)) {
-			$relationshipName = $localPath;
+			$relationshipName = $modelPath;
 
 			if ($isTagField && !self::bitfieldTest($options, self::OptionSkipTagFields)) {
 
-				$toModel->$relationshipName = implode(self::tag_delimiter(), $value);
+				// setter should map through to a set<RelationshipName> method on the Quaff extension
+				if ($toModel->hasMethod("set$relationshipName")) {
+					$toModel->$relationshipName = $value;
+				}
 
 			} elseif (!self::bitfieldTest($options, self::OptionShallow)) {
 
@@ -187,8 +193,13 @@ abstract class Mapper extends Object
 						);
 					}
 				}
-			} elseif ($toModel->hasField($localPath)) {
-				$toModel->$localPath = $value;
+			} elseif ($toModel->hasMethod("set$modelPath")) {
+
+				$toModel->{"set$modelPath"}($value);
+
+			} elseif ($toModel->hasField($modelPath)) {
+
+				$toModel->$modelPath = $value;
 			}
 		}
 	}
@@ -230,11 +241,11 @@ abstract class Mapper extends Object
 		$mapper = static::cache($acceptType);
 
 		if (!$mapper) {
-			foreach (array_slice(ClassInfo::subclassesFor('Quaff\Mapper'), 1) as $className) {
+			foreach (array_slice(ClassInfo::subclassesFor('Quaff\Mappers\Mapper'), 1) as $className) {
 				/** @var Mapper $mapper */
 				$mapper = Injector::inst()->create($className, $endpoint);
 
-				if (static::match_content_type($acceptType)) {
+				if ($mapper->accepts($acceptType)) {
 					break;
 				}
 
@@ -245,12 +256,12 @@ abstract class Mapper extends Object
 	}
 
 	/**
-	 * Tests if the provided acceptType is in the array of acceptTypes.
+	 * Tests if this mapper handles the passed contentType, e.g. application/json
 	 *
 	 * @param $contentType
 	 * @return bool
 	 */
-	public static function match_content_type($contentType) {
+	public function accepts($contentType) {
 		return in_array($contentType, static::config()->get('content_types'));
 	}
 
