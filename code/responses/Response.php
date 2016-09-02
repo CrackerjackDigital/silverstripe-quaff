@@ -144,9 +144,14 @@ abstract class Response extends Object implements ResponseInterface {
 					if (!$model = $this->findModel($item, $options)) {
 						$model = $this->modelFactory($item, $options);
 					}
-					$models->push($model);
+					if ($model) {
+						$models->push($model);
+					}
 				}
-
+			}
+			// now save them
+			foreach ($models as $model) {
+				$model->write();
 			}
 		}
 		return $models;

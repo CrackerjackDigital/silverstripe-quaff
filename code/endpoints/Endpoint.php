@@ -248,8 +248,8 @@ abstract class Endpoint extends Object implements EndpointInterface {
 					$model->quaff($this, $apiData, $flags);
 				}
 			}
+			return $model;
 		}
-		return null;
 	}
 
 	/**
