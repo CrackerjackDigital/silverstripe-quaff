@@ -74,7 +74,11 @@ abstract class Endpoint extends Object implements EndpointInterface {
 						static::debug_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
 						/** @var Model $item */
 						foreach ($items as $item) {
-							$item->write();
+							try {
+								$item->write();
+							} catch(\ValidationException $e) {
+								static::debug_message("Failed to add item: " . $e->getMessage(), Debugger::DebugWarn);
+							}
 						}
 					}
 				}

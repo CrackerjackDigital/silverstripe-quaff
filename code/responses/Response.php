@@ -145,13 +145,10 @@ abstract class Response extends Object implements ResponseInterface {
 						$model = $this->modelFactory($item, $options);
 					}
 					if ($model) {
+						$model->write();
 						$models->push($model);
 					}
 				}
-			}
-			// now save them
-			foreach ($models as $model) {
-				$model->write();
 			}
 		}
 		return $models;
