@@ -60,7 +60,7 @@ interface Endpoint {
 	 * @param null $flags
 	 * @return \Modular\Model
 	 */
-	public function modelFactory($apiData, $flags = null);
+	public function createEmptyModel($apiData, $flags = null);
 
 	/**
 	 * @param $apiData

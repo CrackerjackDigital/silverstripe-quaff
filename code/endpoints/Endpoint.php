@@ -61,75 +61,100 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 * Quaff's the remote endpoint, pulling down all items and then writes them to local models.
 	 */
 	public function sync() {
+		ob_start();
+
+		$this->debugger(Debugger::DebugTrace)
+			->toEmail('servers+fbu@moveforward.co.nz', Debugger::DebugNotice)
+			->toFile('', Debugger::DebugTrace);
+
 		$this->extend('startSync');
 		$this->init();
 
-		/** @var \Quaff\Interfaces\Response $response */
-		if ($response = $this->quaff()) {
+		$models = new \ArrayList();
 
-			if ($response->isValid()) {
+		$index = 0;
+
+		/** @var \Quaff\Interfaces\Response $response */
+		foreach ($this->quaff() as $response) {
+ 			if ($response->isValid()) {
 				if ($items = $response->getItems()) {
 
-					if ($items->count()) {
-						static::debug_message("Adding " . $items->count() . " items", Debugger::DebugTrace);
-						/** @var Model $item */
-						foreach ($items as $item) {
+					if ($count = $items->count()) {
+						static::debug_trace("Adding '$count' items");
+
+						/** @var Model $model */
+						foreach ($items as $model) {
 							try {
-								$item->write();
+								$model->write();
+								$models->push($model);
+
+								static::debug_trace($index . ":" . var_dump($model->toMap()));
+
+								$index++;
+
 							} catch(\ValidationException $e) {
-								static::debug_message("Failed to add item: " . $e->getMessage(), Debugger::DebugWarn);
+								static::debug_message("Failed to add model: " . $e->getMessage(), Debugger::DebugWarn);
 							}
 						}
+					} else {
+						static::debug_trace("Finished after '$index' models");
+						// no more items
+						break;
 					}
 				}
 			} else {
-				$this->debug_error("Invalid response with code: " . $response->getErrorMessage());
+				$this->debug_error("Error response: " . $response->getResultMessage());
+				break;
 			}
 		}
-		$this->extend('endSync', $response, $items);
-		return $items;
+		$this->extend('endSync', $response, $models);
+		ob_flush();
+		return $models;
 	}
 
 	/**
-	 * Call the remote endpoint and return a response.
+	 * Call the remote endpoint and return an iterable set of responses with models available via getItems.
 	 *
 	 * @param array     $queryParams
 	 * @param Quaffable $model to provide as a template when building the uri to call
-	 * @return Response
+	 * @return \Generator|\NoRewindIterator
 	 * @api
 	 */
 	public function quaff(array $queryParams = [], $model = null) {
-		$this->extend('startQuaff', $queryParams, $model);
-
 		/** @var TransportInterface $transport */
 		$transport = Transport::factory(
 			$this,
 			$queryParams
 		);
 
-		$uri = $this->uri($queryParams, $model);
+		do {
+			$uri = $this->uri($queryParams, $model);
 
-		$response = $transport->get(
-			$uri
-		);
-		return $response;
+			/** @var Response $response */
+			$response = $transport->get(
+				$uri,
+				$queryParams
+			);
+			yield $response;
+
+		} while ($response->isValid());
 	}
 
 	/**
 	 * Return full remote url with any query parameters from params and from model passed.
 	 *
-	 * @param array          $params additional query string parameters
+	 * @param array          $params additional query string parameters by reference so can do e.g. pager extensions
 	 * @param Quaffable|null $model  which provided parameters to add to the url
 	 * @return string
 	 */
-	protected function uri(array $params = [], $model = null) {
+	protected function uri(array &$params = [], $model = null) {
 
 		$url = Controller::join_links(
 			$this->getBaseURL(),
 			$this->getURL()
 		);
 		$queryParams = $this->queryParams($params, $model);
-		$uriParams = $this->uriParams();
+		$uriParams = $this->uriParams($params, $model);
 
 		return $this->prepareURI($url, $uriParams, $queryParams);
 	}
@@ -137,46 +162,31 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	/**
 	 * Returns an array of query string segments in preference of config.params.get, model fields then params.
 	 *
-	 * @param array                $params
+	 * @param array                $params by reference so can do e.g. pager extensions
 	 * @param Quaffable|Model|null $model if not supplied getModelClass singleton will be used
 	 * @return array
 	 */
-	protected function queryParams(array $params = [], $model = null) {
-		$fields = [];
-
-		if (!$model) {
-			$model = singleton($this->getModelClass());
-		}
-
-		if ($model) {
-			// TODO handle recursive mapping for arrays/collections.
-			// add model fields which are in the field map to the parameters as a name=value entry.
-			$fields += array_filter(
-				array_intersect_key(
-					$model->toMap(),
-					array_flip(
-						array_keys(
-							$model->quaffMapForEndpoint(
-								$this,
-								Quaffable::MapOwnFieldsOnly
-							)
-						)
-					)
-				),
-				function ($value) {
-					return urlencode(trim($value));
-				}
-			);
-		}
+	protected function queryParams(array &$params = [], $model = null) {
 		$params = array_merge(
 			static::get_config_setting('default_params', $this->method()) ?: [],
-			$fields,
 			$params
 		);
 
 		$this->extend('updateQueryParameters', $params, $model);
 
 		return $params;
+	}
+
+	/**
+	 * Replaces tokens in the url which values from params. Override in concrete classes to provide custom url mangling.
+	 *
+	 * @param array $params
+	 * @param null  $model
+	 * @return array map of token name => value for parameters to add to the remote uri called, e.g. [ 'id' => 1212 ]
+	 */
+	public function uriParams(array &$params, $model = null) {
+		$this->extend('updateURIParameters', $params, $model);
+		return [];
 	}
 
 	/**
@@ -235,24 +245,19 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	}
 
 	/**
-	 * Return a new instance of the model class returned from this endpoint with optional data set.
+	 * Return a new instance of the model class returned from this endpoint.
+	 * NB: no fields are set from apiData, you should call quaff on it to import the raw api data.
 	 *
-	 * @param array    $apiData
+	 * @param array    $apiData optionally pass data to assist in model creation, doesn't get set on the model though
 	 * @param int|null $flags
 	 * @return \Modular\Model|null
 	 */
-	public function modelFactory($apiData, $flags = null) {
+	public function createEmptyModel($apiData = [], $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
 			/** @var \Shuttlerock\Models\Model|Quaffable $model */
 			if ($model = Injector::inst()->create($modelClass)) {
-
-				if (func_num_args() === 1) {
-					$model->quaff($this, $apiData);
-				} else {
-					$model->quaff($this, $apiData, $flags);
-				}
+				return $model;
 			}
-			return $model;
 		}
 	}
 
@@ -265,7 +270,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 */
 	public function responseFactory($apiData) {
 		if ($responseClass = $this->getResponseClass()) {
-			return Injector::inst()->create($responseClass, $this, $apiData, $metaData);
+			return Injector::inst()->create($responseClass, $this, $apiData);
 		}
 		return null;
 	}
@@ -283,15 +288,6 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	public static function match($pattern, $path) {
 		$path = preg_replace('/{[^}]+}/', '*', $path);
 		return fnmatch($pattern, $path);
-	}
-
-	/**
-	 * Replaces tokens in the url which values from params. Override in concrete classes to provide custom url mangling.
-	 *
-	 * @return array map of token name => value for paramters to add to the remote uri called.
-	 */
-	public function uriParams() {
-		return [];
 	}
 
 	public function getInfo() {

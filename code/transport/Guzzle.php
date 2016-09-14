@@ -48,10 +48,11 @@ class Guzzle extends Transport {
 
 	/**
 	 * @param array $uri
+	 * @param array $params
 	 * @return array|\SimpleXMLElement
-	 * @throws Exception
+	 * @throws \Quaff\Exceptions\Transport
 	 */
-	public function get($uri) {
+	public function get($uri, array $params = []) {
 		try {
 			/** @var GuzzleResponse $response */
 			$response = $this->client->get(
