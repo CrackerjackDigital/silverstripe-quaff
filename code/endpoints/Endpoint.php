@@ -9,9 +9,7 @@ use Modular\Object;
 use Modular\tokens;
 use Quaff\Exceptions\Endpoint as Exception;
 use Quaff\Interfaces\Quaffable;
-use Quaff\Responses\Response;
 use Quaff\Transport\Transport;
-
 use Quaff\Interfaces\Transport as TransportInterface;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Modular\Controller;
@@ -64,8 +62,8 @@ abstract class Endpoint extends Object implements EndpointInterface {
 		ob_start();
 
 		$this->debugger(Debugger::DebugTrace)
-			->toEmail('servers+fbu@moveforward.co.nz', Debugger::DebugNotice)
-			->toFile('', Debugger::DebugTrace);
+			->toFile(Debugger::DebugTrace, 'logs/shuttlerock-sync.log')
+			->sendFile('servers+fbu@moveforward.co.nz');
 
 		$this->extend('startSync');
 		$this->init();
@@ -109,6 +107,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 		}
 		$this->extend('endSync', $response, $models);
 		ob_flush();
+
 		return $models;
 	}
 
@@ -130,7 +129,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 		do {
 			$uri = $this->uri($queryParams, $model);
 
-			/** @var Response $response */
+			/** @var \Quaff\Responses\Response $response */
 			$response = $transport->get(
 				$uri,
 				$queryParams

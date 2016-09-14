@@ -40,8 +40,8 @@ abstract class SyncTask extends BuildTask {
 	 */
 	public function run($request) {
 		$this->debugger($this->config()->get('log_level'))
-			->toEmail($this->config()->get('log_email'), Debugger::DebugNotice)
-			->toFile($this->config()->get('log_file'), Debugger::DebugInfo);
+			->toFile(Debugger::DebugInfo, $this->config()->get('log_file'))
+			->sendFile($this->config()->get('log_email'));
 
 		if ($this->enabled()) {
 			/** @var Api $api */

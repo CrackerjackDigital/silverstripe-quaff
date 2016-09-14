@@ -114,8 +114,6 @@ abstract class Api extends Object
 	}
 
 	public static function sync($endpointPaths = null) {
-		static::debugger()->level(\SS_Log::INFO);
-
 		static::debug_info('Starting sync');
 
 		if (!Director::is_cli()) {
