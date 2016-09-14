@@ -7,7 +7,7 @@ use Modular\Debugger;
 use Modular\Model;
 use Modular\Object;
 use Modular\tokens;
-use Quaff\Exceptions\Exception;
+use Quaff\Exceptions\Endpoint as Exception;
 use Quaff\Interfaces\Quaffable;
 use Quaff\Responses\Response;
 use Quaff\Transport\Transport;
@@ -92,7 +92,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 
 								$index++;
 
-							} catch(\ValidationException $e) {
+							} catch(Exception $e) {
 								static::debug_message("Failed to add model: " . $e->getMessage(), Debugger::DebugWarn);
 							}
 						}

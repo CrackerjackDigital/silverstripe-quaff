@@ -63,7 +63,7 @@ class LocalJSONFile extends Transport {
 		if (json_last_error() !== JSON_ERROR_NONE) {
 			throw new Exception("json_decode error: " . json_last_error_msg());
 		}
-
+		// we have to fake paginated results in this transport as all results are in one file for simplicity's sake
 		if ($pagination = $endpoint->info('pagination')) {
 			$pageVar = $pagination['page_var'];
 			$lengthVar = $pagination['length_var'];
