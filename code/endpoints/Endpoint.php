@@ -15,8 +15,10 @@ use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Modular\Controller;
 use Injector;
 
-abstract class Endpoint extends Object implements EndpointInterface {
+class Endpoint extends Object implements EndpointInterface {
 	use tokens;
+
+	const Version = '*';
 
 	const FormatKeys   = 1;
 	const FormatValues = 2;
@@ -41,7 +43,9 @@ abstract class Endpoint extends Object implements EndpointInterface {
 
 	private static $default_params = [];
 
-	public function __construct($path, array $info) {
+	private static $version = '';
+
+	public function __construct($path, array $info = []) {
 		$this->path = $path;
 		$this->info = $info;
 
@@ -253,7 +257,7 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	 */
 	public function createEmptyModel($apiData = [], $flags = null) {
 		if ($modelClass = $this->getModelClass()) {
-			/** @var \Shuttlerock\Models\Model|Quaffable $model */
+			/** @var Model|Quaffable $model */
 			if ($model = Injector::inst()->create($modelClass)) {
 				return $model;
 			}
@@ -289,8 +293,20 @@ abstract class Endpoint extends Object implements EndpointInterface {
 		return fnmatch($pattern, $path);
 	}
 
+	public function version() {
+		return $this->config()->get('version') ?: static::Version;
+	}
+
+	public function auth() {
+		return true;
+	}
+
 	public function getInfo() {
 		return $this->info;
+	}
+
+	public function getItemPath() {
+		return '';
 	}
 
 	public function getModelClass() {
@@ -304,19 +320,17 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	public function getErrorClass() {
 		return $this->info('error') ?: static::ErrorClass;
 	}
-
 	/**
 	 * @return string
 	 */
 	public function getEndpointClass() {
 		return $this->info('endpoint');
 	}
-
 	/**
 	 * @return string
 	 */
 	public function getTransportClass() {
-		return $this->info('transport') ?: $this->config()->get('transport');
+		return $this->info('transport');
 	}
 
 	/**
