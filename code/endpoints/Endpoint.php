@@ -105,7 +105,7 @@ class Endpoint extends Object implements EndpointInterface {
 					}
 				}
 			} else {
-				$this->debug_error("Error response: " . $response->getResultMessage());
+				$this->debug_error("Error syncing model response: " . $response->getResultMessage());
 				break;
 			}
 		}

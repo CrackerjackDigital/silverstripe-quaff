@@ -17,7 +17,7 @@ interface Api {
 	 *                         defined in config.sync_endpoints
 	 * @return \Quaff\Responses\Response
 	 */
-	public static function sync($endpoints = null);
+	public function sync($endpoints = null);
 
 	/**
 	 * Return all the endpoints handled by this api.

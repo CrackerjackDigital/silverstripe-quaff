@@ -6,8 +6,7 @@ use Quaff\Exceptions\Transport as Exception;
 trait chunked {
 	abstract public function copyChunkSize();
 
-	public function copy($fpFrom, $fpTo) {
-		$totalWritten = 0;
+	public function copy($fpFrom, $fpTo, &$totalWritten = 0) {
 		$chunkSize = $this->copyChunkSize();
 
 		while (!feof($fpFrom)) {
@@ -25,9 +24,8 @@ trait chunked {
 				}
 			}
 		}
-
 		fflush($fpTo);
 		fseek($fpTo, 0, SEEK_SET);
-
+		return $this;
 	}
 }

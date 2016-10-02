@@ -17,7 +17,7 @@ interface Endpoint {
 	/**
 	 * Calls remote uri and creates models in database.
 	 *
-	 * @return mixed
+	 * @return bool return true if success, false if failed
 	 */
 	public function sync();
 
