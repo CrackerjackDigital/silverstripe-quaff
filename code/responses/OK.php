@@ -52,7 +52,7 @@ class OK extends Response {
 			}
 			$endpoint = $this->getEndpoint();
 
-			while ($item = $this->reader->read()) {
+			while ($item = $this->read()) {
 				/** @var Quaffable $model */
 				if (!$model = $this->findModel($item, $options)) {
 

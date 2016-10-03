@@ -8,28 +8,30 @@ use Quaff\Transport\Reader;
  *
  * @package Quaff\Transport\Readers
  */
-class Stream extends Reader {
+abstract class Stream extends Reader {
 	/** @var resource stream pointer */
-	protected $fp;
+	protected $stream;
+
+	abstract public function read();
+
+	public function done() {
+		return ($this->stream && !feof($this->stream)) || (!$this->stream);
+	}
 
 	/**
 	 * Stream constructor.
 	 *
-	 * @param resource $fp file pointer to read from.
+	 * @param resource $stream file pointer to read from.
 	 */
-	public function __construct($fp) {
+	public function __construct($stream) {
 		parent::__construct();
-		$this->fp = $fp;
-	}
-
-	public function read() {
-		return file_get_contents($this->fp);
+		$this->stream = $stream;
 	}
 
 	public function close() {
-		if ($this->fp) {
-			fclose($this->fp);
-			$this->fp = null;
+		if ($this->stream) {
+			fclose($this->stream);
+			$this->stream = null;
 		}
 	}
 }
