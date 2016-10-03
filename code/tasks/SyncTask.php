@@ -7,6 +7,7 @@ use Modular\Debugger;
 use Modular\debugging;
 use Modular\enabler;
 use Quaff\Api;
+use Quaff\Models\SyncLog;
 
 abstract class SyncTask extends BuildTask {
 	use enabler;
@@ -47,8 +48,8 @@ abstract class SyncTask extends BuildTask {
 			/** @var Api $api */
 			$api = \Injector::inst()->create(static::ServiceName);
 
-			foreach ($this->config()->get('endpoints') as $endpoint) {
-				$api->sync($endpoint);
+			foreach ($this->config()->get('endpoints') as $endpointPath) {
+				$api->sync($endpointPath);
 			}
 
 		} else {

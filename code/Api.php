@@ -14,6 +14,9 @@ use Quaff\Exceptions\Exception;
 use Quaff\Interfaces\Api as ApiInterface;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Locator as LocatorInterface;
+use Quaff\Models\ApiConfig;
+use Quaff\Models\EndpointConfig;
+use Quaff\Models\SyncLog;
 
 abstract class Api extends Object
 	implements ApiInterface, LocatorInterface {
@@ -113,8 +116,13 @@ abstract class Api extends Object
 		return static::cache($service, $api);
 	}
 
-	public static function sync($endpointPaths = null) {
+	public function sync($endpointPaths = null) {
+
 		static::debug_info('Starting sync');
+
+		$log = new SyncLog();
+		$log->ApiConfigID = (new ApiConfig())->fromApi($this)->write();
+
 
 		if (!Director::is_cli()) {
 			ob_start('nl2br');
@@ -147,8 +155,13 @@ abstract class Api extends Object
 		// now get the endpoints to sync themselves
 		/** @var EndpointInterface $endpoint */
 		foreach ($endpoints as $endpointPath => $endpoint) {
+			$endpointConfig = (new EndpointConfig())->fromEndpoint($endpoint);
 
-			$endpoint->sync();
+			$log->Endpoints()->add($endpointConfig);
+$end
+			if ($endpoint->sync()) {
+				
+			}
 		}
 		if (!Director::is_cli()) {
 			ob_end_flush();

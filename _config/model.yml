@@ -1,0 +1,26 @@
+---
+Name: quaff-fields-config
+---
+Quaff\Models\SyncLog:
+  extensions:
+    - Modular\Fields\Title
+    - Modular\Fields\EventDate
+Quaff\Models\SyncLogEntry:
+  extensions:
+    - Modular\Fields\EventDate
+    - Quaff\Fields\ItemData         # raw data for this model
+    - Quaff\Fields\SyncOutcome
+---
+Name: quaff-relationships-config
+---
+Quaff\Models\SyncLog:
+  extensions:
+    - Quaff\Relationships\HasSyncLogEntries
+---
+Name: quaff-back-relationships-config
+---
+Quaff\Models\SyncLogEntry:
+  has_one:
+    SyncTask: Quaff\Models\SyncLog
+  extensions:
+    - HasSyncedModel

@@ -1,0 +1,8 @@
+---
+Name: quaff-transports
+---
+Injector:
+  DefaultTransport:
+    class: 'Quaff\Transport\CURL'
+  FallbackTransport:
+    class: 'Quaff\Transport\Streams'
