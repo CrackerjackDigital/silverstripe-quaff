@@ -4,12 +4,19 @@ namespace Quaff\Responses;
 use Quaff\Exceptions\Response as Exception;
 use Quaff\Interfaces\Mapper;
 use Quaff\Interfaces\Quaffable;
+use Quaff\Interfaces\Reader;
 use Quaff\Mappers\ArrayMapper;
 
-class OK extends Response {
+abstract class OK extends Response {
+
+	abstract public function read();
 
 	public function getVersion() {
 		return $this->meta('Version');
+	}
+
+	public function isOK() {
+		return !$this->isError();
 	}
 
 	public function isError() {
@@ -33,36 +40,21 @@ class OK extends Response {
 	 *
 	 * @param int $options
 	 * @return \SS_List
-	 */
-	public function getItems($options = Mapper::DefaultOptions) {
-		return $this->items($options);
-	}
-
-	/**
-	 * Return list of Models populated from the raw data.
-	 *
-	 * Items are either existing found using 'findModel' or new models via 'makeModel'
-	 * updated from the item data via their 'quaff' method.
-	 *
-	 * @param  array|int $options
-	 * @return \ArrayList
-	 * @throws \Modular\Exceptions\NotImplemented
+	 * @throws \Modular\Exceptions\Exception
 	 * @throws \Quaff\Exceptions\Response
 	 */
-	protected function items($options = null) {
+	public function getItems($options = Mapper::DefaultOptions) {
 		$models = new \ArrayList();
 
 		if ($this->isValid()) {
 			$contentType = $this->getContentType();
 
-			if ($type = static::decode_content_type($contentType)) {
-				$items = $this->$type($options);
-			} else {
+			if (!$type = static::decode_content_type($contentType)) {
 				throw new Exception("Bad content type '$contentType'");
 			}
 			$endpoint = $this->getEndpoint();
 
-			foreach ($items as $item) {
+			while ($item = $this->read()) {
 				/** @var Quaffable $model */
 				if (!$model = $this->findModel($item, $options)) {
 
@@ -77,7 +69,6 @@ class OK extends Response {
 				$models->push($model);
 			}
 		}
-		return $models;
 	}
 
 	/**
@@ -87,7 +78,7 @@ class OK extends Response {
 	 * @throws Exception
 	 */
 	protected function json() {
-		if (is_null($json = json_decode($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeJSON)))) {
+		if (is_null($json = json_decode($this->buffer, $this->get_config_setting('decode_options', self::ContentTypeJSON)))) {
 			$message = "Failed to load json from response raw data";
 			if ($error = json_last_error()) {
 				$message .= ": '$error'";
@@ -117,7 +108,7 @@ class OK extends Response {
 		libxml_clear_errors();
 
 		$doc = new \DOMDocument();
-		if (!$doc->loadXML($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeXML))) {
+		if (!$doc->loadXML($this->buffer, $this->get_config_setting('decode_options', self::ContentTypeXML))) {
 
 			$message = "Failed to load document from response raw data";
 			if ($error = libxml_get_last_error()) {
@@ -144,7 +135,7 @@ class OK extends Response {
 		libxml_clear_errors();
 
 		$doc = new \DOMDocument();
-		if (!$doc->loadHTML($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeHTML))) {
+		if (!$doc->loadHTML($this->buffer, $this->get_config_setting('decode_options', self::ContentTypeHTML))) {
 			$message = "Failed to load document from response raw data";
 
 			if ($error = libxml_get_last_error()) {
@@ -192,19 +183,24 @@ class OK extends Response {
 	 */
 	public function data($key = null) {
 		if (func_num_args()) {
-			return array_key_exists($key, $this->rawData ?: []) ? $this->rawData[ $key ] : null;
+			return array_key_exists($key, $this->buffer ?: []) ? $this->buffer[ $key ] : null;
 		}
-		return $this->rawData;
+		return $this->buffer;
 	}
 
 	/**
-	 * Returns the raw data from the response.
+	 * Return all the data from the buffer in one chunk.
 	 *
-	 * @return array
+	 * @return string
 	 */
 	public function getRawData() {
-		return $this->rawData;
+		$data = '';
+		while ($buff = $this->read()) {
+			$data .= $buff;
+		}
+		return $data;
 	}
+
 
 	/**
 	 * Content types may have character encoding so just do a rude find of the expected content type in the response
@@ -245,7 +241,7 @@ class OK extends Response {
 	 *                      The return value will be casted to boolean if non-boolean was returned.
 	 */
 	public function offsetExists($offset) {
-		return is_array($this->rawData) && array_key_exists($offset, $this->rawData);
+		return is_array($this->buffer) && array_key_exists($offset, $this->buffer);
 	}
 
 	/**
@@ -259,7 +255,7 @@ class OK extends Response {
 		if (!$this->offsetExists($offset)) {
 			throw new Exception("Invalid key '$offset'");
 		}
-		return $this->rawData[ $offset ];
+		return $this->buffer[ $offset ];
 	}
 
 	/**
@@ -269,7 +265,7 @@ class OK extends Response {
 	 * @param mixed $value
 	 */
 	public function offsetSet($offset, $value) {
-		$this->rawData[ $offset ] = $value;
+		$this->buffer[ $offset ] = $value;
 	}
 
 	/**
@@ -284,7 +280,7 @@ class OK extends Response {
 	 */
 	public function offsetUnset($offset) {
 		if ($this->offsetExists($offset)) {
-			unset($this->rawData[ $offset ]);
+			unset($this->buffer[ $offset ]);
 		}
 	}
 

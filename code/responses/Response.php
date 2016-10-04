@@ -9,6 +9,7 @@ use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Response as ResponseInterface;
 use Quaff\Interfaces\Mapper as MapperInterface;
 use Quaff\Mappers\ArrayMapper;
+use Quaff\Transport\Reader;
 
 // roll on php 5.6 wider support so can use expressions in constanta!
 if (!defined('QUAFF_RESPONSE_DEFAULT_JSON_DECODE_OPTIONS')) {
@@ -48,9 +49,13 @@ abstract class Response extends Object implements ResponseInterface {
 		self::ContentTypeXML  => self::DefaultXMLOptions,
 		self::ContentTypeHTML => self::DefaultHTMLOptions,
 	];
+	// native result code
+	protected $resultCode;
 
-	protected $rawData;
+	// either data or a stream which can be handled by a reader
+	protected $buffer;
 
+	// information about the response
 	protected $metaData;
 
 	/** @var EndpointInterface */
@@ -60,20 +65,50 @@ abstract class Response extends Object implements ResponseInterface {
 	 * Response constructor.
 	 *
 	 * @param EndpointInterface $endpoint
-	 * @param string            $rawData  e.g. body of HTTP response
+	 * @param                   $resultCode
+	 * @param string|resource   $buffer   e.g. body of HTTP response
 	 * @param array             $metaData extra information such as headers
 	 */
-	public function __construct(EndpointInterface $endpoint, $rawData, $metaData) {
+	public function __construct(EndpointInterface $endpoint, $resultCode, $buffer, $metaData) {
 		$this->endpoint = $endpoint;
-		$this->rawData = $rawData;
+		$this->resultCode = $resultCode;
+		$this->buffer = $buffer;
 		$this->metaData = $metaData;
 		parent::__construct();
 	}
 
-	public function __get($name) {
-		return $this->hasMethod("get$name")
-			? $this->{"get$name"}()
-			: $this->data($name);
+	/**
+	 * Return metaData value by key if provided or all meta data if no key given
+	 *
+	 * @param $key
+	 * @return array
+	 */
+	public function meta($key = null, $subkey = null) {
+		if (func_num_args()) {
+			$value = array_key_exists($key, $this->metaData ?: []) ? $this->metaData[ $key ] : null;
+
+			if (func_num_args() == 1) {
+				// no subkey
+				return $value;
+			}
+
+			if (is_array($value) && array_key_exists($subkey, $value)) {
+				// subkey found
+				return $value[ $subkey ];
+			}
+
+			return null;
+		}
+		// return all the meta data as no params
+		return $this->metaData;
+	}
+
+	/**
+	 * Return the data or a stream suitable for use by a reader trait
+	 * @return resource|string
+	 */
+	public function getBuffer() {
+		return $this->buffer;
 	}
 
 	/**
@@ -82,7 +117,7 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @return mixed
 	 */
 	public function getResultCode() {
-		return $this->meta('ResultCode');
+		return $this->resultCode;
 	}
 
 	/**
@@ -111,19 +146,6 @@ abstract class Response extends Object implements ResponseInterface {
 		return $this->endpoint;
 	}
 
-	/**
-	 * Return metaData value by key
-	 *
-	 * @param $key
-	 * @return array
-	 */
-	public function meta($key = null) {
-		if (func_num_args()) {
-			return array_key_exists($key, $this->metaData ?: []) ? $this->metaData[ $key ] : null;
-		}
-		return $this->meta;
-	}
-
 	public function getURI() {
 		return $this->meta('URI');
 	}
@@ -137,6 +159,5 @@ abstract class Response extends Object implements ResponseInterface {
 	public function isValid() {
 		return !$this->isError();
 	}
-
 
 }

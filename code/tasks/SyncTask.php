@@ -2,13 +2,14 @@
 namespace Quaff\Tasks;
 
 use BuildTask;
-use Config;
+use Modular\config;
 use Modular\Debugger;
 use Modular\debugging;
 use Modular\enabler;
 use Quaff\Api;
 
 abstract class SyncTask extends BuildTask {
+	use config;
 	use enabler;
 	use debugging;
 
@@ -41,14 +42,16 @@ abstract class SyncTask extends BuildTask {
 	public function run($request) {
 		$this->debugger($this->config()->get('log_level'))
 			->toFile(Debugger::DebugInfo, $this->config()->get('log_file'))
+			->toScreen(Debugger::DebugAll)
 			->sendFile($this->config()->get('log_email'));
 
 		if ($this->enabled()) {
 			/** @var Api $api */
 			$api = \Injector::inst()->create(static::ServiceName);
+			$endpointPaths = $this->require_config_setting('endpoints');
 
-			foreach ($this->config()->get('endpoints') as $endpoint) {
-				$api->sync($endpoint);
+			foreach ($endpointPaths as $endpointPath) {
+				$api->sync($endpointPath);
 			}
 
 		} else {

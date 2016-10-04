@@ -40,10 +40,10 @@ abstract class Mapper extends Object
 	 * Given data in a nested array, a field map to a flat structure and a DataObject to set field values
 	 * on populate the model.
 	 *
-	 * @param array|string      $fromData
-	 * @param DataObject        $toModel - model to receive parsed value as field values
-	 * @param EndpointInterface $endpoint
-	 * @param int               $options bitfield of or'd self::OptionXYZ flags
+	 * @param array|string         $fromData
+	 * @param DataObject|Quaffable $toModel - model to receive parsed value as field values
+	 * @param EndpointInterface    $endpoint
+	 * @param int                  $options bitfield of or'd self::OptionXYZ flags
 	 * @return int - number of fields found for mapping
 	 * @throws Mapping
 	 */
