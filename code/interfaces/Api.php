@@ -1,8 +1,6 @@
 <?php
 namespace Quaff\Interfaces;
 
-
-
 /**
  * Interface used by locator to match and endpoint to a field map for a model.
  *
@@ -13,11 +11,11 @@ interface Api {
 	/**
 	 *
 	 *
-	 * @param array $endpoints paths of endpoints to sync, if not provided then all endpoints for the api will be synced in order
-	 *                         defined in config.sync_endpoints
+	 * @param array $endpointAliases aliases of endpoints to sync, if not provided then all endpoints for the api will be synced in order
+	 *                               defined in config.sync_endpoints
 	 * @return \Quaff\Responses\Response
 	 */
-	public function sync($endpoints = null);
+	public static function sync(array $endpointAliases);
 
 	/**
 	 * Return all the endpoints handled by this api.
@@ -29,10 +27,10 @@ interface Api {
 	/**
 	 * Return a configured endpoint for a path.
 	 *
-	 * @param $path
+	 * @param $alias
 	 * @return Endpoint|Object
 	 */
-	public static function endpoint($path);
+	public static function endpoint($alias);
 
 	/**
 	 * Return a configured endpoint for a model and action.

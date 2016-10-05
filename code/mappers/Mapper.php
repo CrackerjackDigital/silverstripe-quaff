@@ -7,14 +7,14 @@ use Injector;
 use Modular\Object;
 use Quaff\Exceptions\Exception;
 use Quaff\Exceptions\Mapping;
-use Quaff\Extensions\Mapping\Helper;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
+use Quaff\Interfaces\Locator as LocatorInterface;
 use Quaff\Interfaces\Mapper as MapperInterface;
 use Quaff\Interfaces\Quaffable;
 use ValidationException;
 
 abstract class Mapper extends Object
-	implements MapperInterface {
+	implements MapperInterface, LocatorInterface {
 	// set this so all method's to call on model for value resolution  are prefixed by this,
 	// e.g. 'quaff' for 'quaffURLSegment' if method is 'URLSegment'
 	private static $map_method_prefix = self::DefaultMapMethodPrefix;
@@ -31,9 +31,14 @@ abstract class Mapper extends Object
 	/** @var array of content types this mapper can handle, e.g. [ 'application/json' ] or [ 'application/xml', 'text/xml' ] */
 	private static $content_types = [];
 
-	public function __construct(EndpointInterface $endpoint) {
+	public function __construct(EndpointInterface $endpoint = null) {
 		$this->endpoint = $endpoint;
 		parent::__construct();
+	}
+
+	public function setEndpoint(EndpointInterface $endpoint) {
+		$this->endpoint = $endpoint;
+		return $this;
 	}
 
 	/**
@@ -230,29 +235,28 @@ abstract class Mapper extends Object
 	/**
 	 * Return a mapper which can handle the provided endpoint's data type (acceptType).
 	 *
-	 * @param EndpointInterface $endpoint
-	 *
-	 * @return MapperInterface
+	 * @param string $acceptType
+	 * @return \Generator yields Mapper instances which handle provided acceptType
 	 * @throws Exception
 	 */
-	public static function locate(EndpointInterface $endpoint) {
-		$acceptType = $endpoint->getAcceptType();
-
+	public static function locate($acceptType) {
 		$mapper = static::cache($acceptType);
 
-		if (!$mapper) {
-			foreach (array_slice(ClassInfo::subclassesFor('Quaff\Mappers\Mapper'), 1) as $className) {
-				/** @var Mapper $mapper */
-				$mapper = Injector::inst()->create($className, $endpoint);
+		if ($mapper) {
+			yield $mapper;
+		}
+		foreach (ClassInfo::subclassesFor('Quaff\Mappers\Mapper') as $className) {
+			if ($className == 'Quaff\Mappers\Mapper') {
+				continue;
+			}
+			/** @var Mapper $mapper */
+			$mapper = Injector::inst()->create($className);
 
-				if ($mapper->accepts($acceptType)) {
-					break;
-				}
-
-				$mapper = null;
+			if ($mapper->match($acceptType)) {
+				static::cache($acceptType, $mapper);
+				yield $mapper;
 			}
 		}
-		return static::cache($acceptType, $mapper);
 	}
 
 	/**
@@ -261,12 +265,16 @@ abstract class Mapper extends Object
 	 * @param $contentType
 	 * @return bool
 	 */
-	public function accepts($contentType) {
-		return in_array($contentType, static::config()->get('content_types'));
+	public function match($contentType) {
+		return in_array($contentType, $this->contentTypes());
 	}
 
+	/**
+	 * Return array of content types this Mapper can map
+	 * @return array
+	 */
 	public function contentTypes() {
-		return $this->config()->get('content_types');
+		return $this->config()->get('content_types') ?: [];
 	}
 
 	/**

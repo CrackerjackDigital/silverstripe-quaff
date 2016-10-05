@@ -7,17 +7,23 @@ use Modular\Debugger;
 use Modular\debugging;
 use Modular\enabler;
 use Quaff\Api;
+use Quaff\Exceptions\Exception;
+use Quaff\Interfaces\Endpoint as EndpointInterface;
 
 abstract class SyncTask extends BuildTask {
 	use config;
 	use enabler;
 	use debugging;
 
-	// name of Api service as Injector see's it, e.g 'ShuttlerockApi'
-	const ServiceName = '';
+	// name of Api service as Injector see's it, e.g 'shuttlerock'
+	const ApiServiceAlias = '';
 
-	// endpoints to sync on the Api service
-	private static $endpoints = [ 'sync:entries' ];
+	// aliases of endpoints to sync on the Api service
+	private static $endpoints = [
+		# e.g:
+		# 'sync:entries',
+	    # 'import:sitetree'
+	];
 
 	// set to SS_Log::INFO = 6 for logging full information, SS_Log::ERR = 3 for just errors.
 	private static $log_level = \SS_Log::INFO;
@@ -47,16 +53,15 @@ abstract class SyncTask extends BuildTask {
 
 		if ($this->enabled()) {
 			/** @var Api $api */
-			$api = \Injector::inst()->create(static::ServiceName);
-			$endpointPaths = $this->require_config_setting('endpoints');
-
-			foreach ($endpointPaths as $endpointPath) {
-				$api->sync($endpointPath);
+			foreach (Api::locate(static::ApiServiceAlias) as $api) {
+				$api::sync($this->config()->get('endpoints'));
 			}
+
 
 		} else {
 			$this->debug_warn('disabled');
 		}
 	}
+
 
 }

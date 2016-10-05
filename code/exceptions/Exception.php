@@ -5,6 +5,6 @@
  */
 namespace Quaff\Exceptions;
 
-class Exception extends \Exception {
+class Exception extends \Modular\Exceptions\Exception {
 
 }

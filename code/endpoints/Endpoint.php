@@ -32,12 +32,12 @@ class Endpoint extends Object implements EndpointInterface {
 
 	const ErrorClass = 'Quaff\Responses\Error';
 
-	/** @var  string the endpoint path e.g 'some-endpoint/get */
-	protected $path;
+	/** @var  string the endpoint alias e.g 'list:entries */
+	protected $alias;
 
 	/** @var array endpoint information merged in constructor */
 	protected $info = [
-		#	'path' => 'someapiendpoint',        path relative to base url
+		#	'path' => '/api/{version}/',        path relative to base url
 		#   'base' => 'public'                  base path info
 	];
 
@@ -45,8 +45,8 @@ class Endpoint extends Object implements EndpointInterface {
 
 	private static $version = '';
 
-	public function __construct($path, array $info = []) {
-		$this->path = $path;
+	public function __construct($alias, array $info = []) {
+		$this->alias = $alias;
 		$this->info = $info;
 
 		parent::__construct();
@@ -66,8 +66,8 @@ class Endpoint extends Object implements EndpointInterface {
 		ob_start();
 
 		$this->debugger(Debugger::DebugTrace)
-			->toFile(Debugger::DebugTrace, '../logs/shuttlerock-sync.log')
-			->sendFile('servers+fbu@moveforward.co.nz');
+			->toFile(Debugger::DebugTrace, '../logs/importer-sync.log')
+			->sendFile('servers+thames@moveforward.co.nz');
 
 		$this->extend('startSync');
 		$this->init();
@@ -279,18 +279,18 @@ class Endpoint extends Object implements EndpointInterface {
 	}
 
 	/**
-	 * Returns the method suffix from the path, e.g. 'get' for 'some-endpoint/get'.
+	 * Returns the method suffix from the alias, e.g. 'list' for 'list:entries'.
 	 *
 	 * @return string
 	 */
 	public function method() {
-		$method = basename($this->getPath());
+		$method = current(explode(':', $this->getAlias()));
 		return $method;
 	}
 
-	public static function match($pattern, $path) {
-		$path = preg_replace('/{[^}]+}/', '*', $path);
-		return fnmatch($pattern, $path);
+	public static function match($pattern, $alias) {
+		$alias = preg_replace('/{[^}]+}/', '*', $alias);
+		return fnmatch($pattern, $alias);
 	}
 
 	public function version() {
@@ -299,6 +299,10 @@ class Endpoint extends Object implements EndpointInterface {
 
 	public function auth() {
 		return true;
+	}
+
+	public function getAlias() {
+		return $this->alias;
 	}
 
 	public function getInfo() {
@@ -334,7 +338,7 @@ class Endpoint extends Object implements EndpointInterface {
 	}
 
 	/**
-	 * Returns the path component without the method, e.g. 'some-endpoint' for 'some-endpoint/get'
+	 * Returns the url of source
 	 *
 	 * @return string
 	 */
@@ -353,7 +357,7 @@ class Endpoint extends Object implements EndpointInterface {
 	 * @return string
 	 */
 	public function getPath() {
-		return $this->info('path') ?: $this->path;
+		return $this->info('path');
 	}
 
 	/**

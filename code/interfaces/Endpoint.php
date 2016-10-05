@@ -35,6 +35,12 @@ interface Endpoint {
 	public function auth();
 
 	/**
+	 * Return the first part of the alies, e.g. 'list' for 'list:entries'
+	 * @return mixed
+	 */
+	public function method();
+
+	/**
 	 * Match this endpoints path/info against another endpoint to see if they are the same or
 	 * this one handles the one passed (e.g. as a requested endpoint).
 	 *
@@ -100,9 +106,15 @@ interface Endpoint {
 
 	public function getTransportClass();
 
+	public function getURL();
+
 	public function getBaseURL();
 
-	public function getPath();
+	/**
+	 * Returns the endpoint 'alias', such as 'list:entries'
+	 * @return string
+	 */
+	public function getAlias();
 
 	/**
 	 * @return string lowercase acceptType e.g. application/json

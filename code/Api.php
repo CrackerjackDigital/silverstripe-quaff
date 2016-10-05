@@ -43,12 +43,6 @@ abstract class Api extends Object
 	/** @var string set this to send error emails to this address when self.error is called */
 	private static $error_log_email_address = '';
 
-	private static $sync_endpoints = [
-		/*
-				'list/some-endpoint' => true
-		 */
-	];
-
 	private static $endpoints = [ /*
 /*   see README endpoint config for more details
        'get/v1/public' => [
@@ -94,45 +88,61 @@ abstract class Api extends Object
 	 * Find and return an api implementation for a service.
 	 *
 	 * @param mixed $service e.g. 'arlo' or 'shuttlerock'
-	 * @return Api
+	 * @return \Generator yields Apis which match requested service (may be more than one)
 	 *
 	 */
-	public static function locate(EndpointInterface $service) {
+	public static function locate($service) {
 		$api = static::cache($service);
 
-		if (!$api) {
-			/** @var EndpointInterface $className */
-			foreach (ClassInfo::implementorsOf('QuaffApiInterface') as $className) {
-				/** @var LocatorInterface $api */
-				$api = Injector::inst()->get($className);
-
+		if ($api) {
+			yield $api;
+		}
+		/** @var EndpointInterface $className */
+		foreach (ClassInfo::subclassesFor('Quaff\\Api') as $className) {
+			if ($className == 'Quaff\\Api') {
+				continue;
+			}
+			/** @var LocatorInterface $api */
+			if ($api = Injector::inst()->get($className)) {
 				if ($api->match($service)) {
-					break;
+					static::cache($service, $api);
+					yield $api;
 				}
-
-				$api = null;
 			}
 		}
-		return static::cache($service, $api);
 	}
 
-	public function sync($endpointPaths = null) {
+	/**
+	 * Test if this api services a particular endpoint.
+	 *
+	 * @param string $test alias or service name to match
+	 * @return array|bool info if endpoint is found, otherwise false.
+	 */
+	public function match($test) {
+		return $this->service() == $test;
+	}
+
+	/**
+	 * Returns config.service
+	 *
+	 * @return string
+	 */
+	public function service() {
+		return $this->config()->get('service');
+	}
+
+	/**
+	 *
+	 * @param array $endpointPaths
+	 * @return \Quaff\Responses\Response|void
+	 * @throws \Quaff\Exceptions\Exception
+	 */
+	public static function sync(array $endpointPaths) {
 
 		static::debug_info('Starting sync');
 
-		$log = new SyncLog();
-		$log->ApiConfigID = (new ApiConfig())->fromApi($this)->write();
-
-
-		if (!Director::is_cli()) {
+		if (!\Director::is_cli()) {
 			ob_start('nl2br');
-		}
-
-		if (!$endpointPaths) {
-			$endpointPaths = static::sync_endpoints();
-		}
-		if (!is_array($endpointPaths)) {
-			$endpointPaths = [$endpointPaths];
 		}
 		$endpoints = [];
 		// first gather all the endpoints passed or from config and assembled the 'active' ones
@@ -148,22 +158,14 @@ abstract class Api extends Object
 				}
 			}
 		}
-		if (count($endpoints) != count($endpointPaths)) {
-			// die if we couldn't find all the endpoints requested, there may be dependancies
-			throw new Exception("Couldn't locate all requested endpoints to sync, aborting sync");
-		}
-		// now get the endpoints to sync themselves
+		// now get the found endpoints to sync themselves
 		/** @var EndpointInterface $endpoint */
 		foreach ($endpoints as $endpointPath => $endpoint) {
-			$endpointConfig = (new EndpointConfig())->fromEndpoint($endpoint);
-
-			$log->Endpoints()->add($endpointConfig);
-$end
 			if ($endpoint->sync()) {
-				
+
 			}
 		}
-		if (!Director::is_cli()) {
+		if (!\Director::is_cli()) {
 			ob_end_flush();
 		}
 		static::debug_info('Ending sync');
@@ -171,50 +173,24 @@ $end
 	}
 
 	/**
-	 * @return array either of endpoint paths or endpoint path => sync flag from config.sync_endpoints.
-	 */
-	protected static function sync_endpoints() {
-		return static::config()->get('sync_endpoints');
-	}
-
-	/**
-	 * Test if this api services a particular endpoint.
-	 *
-	 * @param $service
-	 * @return array|bool info if endpoint is found, otherwise false.
-	 */
-	public function match(EndpointInterface $service) {
-		return $this->service() == $service->getPath();
-	}
-
-	/**
-	 * Returns config.service
-	 *
-	 * @return string
-	 */
-	public function service() {
-		return $this->config()->get('service');
-	}
-
-	/**
-	 * Returns the configured endpoints for this api or empty array.
+	 * Returns the endpoints aliases for this api or empty array.
 	 *
 	 * @return array
 	 */
 	public static function endpoints() {
-		return static::config()->get('endpoints');
+		return static::config()->get('endpoints') ?: [];
 	}
 
 	/**
 	 * Return a configured endpoint.
 	 *
-	 * @param string $path
+	 * @param string $alias
 	 * @return EndpointInterface
 	 */
-	public static function endpoint($path) {
+	public static function endpoint($alias) {
 		foreach (static::endpoints() as $testPath => $config) {
-			if (Endpoint::match($testPath, $path)) {
-				return static::make_endpoint($path, $config);
+			if (Endpoint::match($testPath, $alias)) {
+				return static::make_endpoint($alias, $config);
 			}
 		}
 		return null;

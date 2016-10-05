@@ -7,6 +7,7 @@ namespace Quaff\Extensions\Model;
 use Modular\bitfield;
 use Modular\config;
 use Modular\ModelExtension;
+use Modular\owned;
 use Quaff\Endpoints\Endpoint;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Quaffable as QuaffableInterface;
@@ -16,6 +17,7 @@ class Quaffable extends ModelExtension
 	implements QuaffableInterface {
 	use config;
 	use bitfield;
+	use owned;
 
 	/**
 	 * Import from $data into object for the $endpoint, does not write the model.
@@ -43,24 +45,17 @@ class Quaffable extends ModelExtension
 		return $result;
 	}
 
-	/**
-	 * @return Model
-	 */
-	public function owner() {
-		return $this->owner;
-	}
-
 	public function toMap() {
 		return $this->owner()->toMap();
 	}
 
 	public function quaffMapForEndpoint(EndpointInterface $endpoint, $options = self::MapDeep) {
 		$maps = $this->owner()->config()->get('quaff_map');
-		$path = $endpoint->getPath();
+		$alias = $endpoint->getAlias();
 		$map = [];
 
 		foreach ($maps as $match => $map) {
-			if (Endpoint::match($match, $path)) {
+			if (Endpoint::match($match, $alias)) {
 				break;
 			}
 			$map = [];
