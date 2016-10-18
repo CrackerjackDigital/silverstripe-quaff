@@ -23,16 +23,13 @@ class QueryModelFields extends ModelExtension {
 	 * TODO TEST IT!!!
 	 *
 	 * @param array                            $params
-	 * @param \Quaff\Interfaces\Quaffable|null $model
 	 */
-	public function updateQueryParameters(array &$params, \Quaff\Interfaces\Quaffable $model = null) {
+	public function updateQueryParameters(array &$params) {
 		$fields = [];
 
-		$info = $this->endpoint()->info('fields');
+		$info = $this->endpoint()->meta('fields');
 
-		if (!$model) {
-			$model = singleton($this->endpoint()->getModelClass());
-		}
+		$model = singleton($this->endpoint()->getModelClass());
 
 		if ($model) {
 			// TODO handle recursive mapping for arrays/collections.

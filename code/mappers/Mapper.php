@@ -5,12 +5,12 @@ use ClassInfo;
 use DataObject;
 use Injector;
 use Modular\Object;
-use Quaff\Exceptions\Exception;
 use Quaff\Exceptions\Mapping;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Locator as LocatorInterface;
 use Quaff\Interfaces\Mapper as MapperInterface;
 use Quaff\Interfaces\Quaffable;
+use Quaff\Exceptions\Mapping as Exception;
 use ValidationException;
 
 abstract class Mapper extends Object
@@ -53,25 +53,24 @@ abstract class Mapper extends Object
 	 * @throws Mapping
 	 */
 	public function quaff($fromData, DataObject $toModel, EndpointInterface $endpoint, $options = Mapper::DefaultOptions) {
+		if (!$map = $toModel->quaffMapForEndpoint($endpoint)) {
+			throw new Exception("No map found for endpoint '" . $endpoint->getAlias() . "'");
+		}
 		$numFieldsFound = 0;
 
-		if ($map = $toModel->quaffMapForEndpoint($endpoint)) {
-			$fromData = $this->decode($fromData);
+		foreach ($map as $fieldInfo) {
+			$found = false;
 
-			foreach ($map as $fieldInfo) {
-				$found = false;
+			// data path is the first value in tuple
+			$dataPath = $fieldInfo[0];
 
-				// data path is the first value in tuple
-				$dataPath = $fieldInfo[0];
+			$value = static::traverse($dataPath, $fromData, $found);
 
-				$value = static::traverse($dataPath, $fromData, $found);
-
-				if ($found) {
-					$this->found($value, $toModel, $fieldInfo, $options);
-					$numFieldsFound++;
-				} else {
-					$this->notFound($toModel, $fieldInfo, $options);
-				}
+			if ($found) {
+				$this->found($value, $toModel, $fieldInfo, $options);
+				$numFieldsFound++;
+			} else {
+				$this->notFound($toModel, $fieldInfo, $options);
 			}
 		}
 		return $numFieldsFound;

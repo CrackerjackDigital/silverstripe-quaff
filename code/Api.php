@@ -32,7 +32,7 @@ abstract class Api extends Object
 	private static $auth_provider = 'QuaffAuthTypeBasic';
 
 	/** @var string the name of a QuaffTransport derived class */
-	private static $transport = 'Quaff\Transport\Guzzle';
+	private static $transport = 'Quaff\Transports\Guzzle';
 
 	/** @var string set this to log to this file under assets directory, e.g. 'logs/quaff-shuttlerock.log' */
 	private static $log_path_name = '';
@@ -187,114 +187,8 @@ abstract class Api extends Object
 	 * @param string $alias
 	 * @return EndpointInterface
 	 */
-	public static function endpoint($alias) {
-		foreach (static::endpoints() as $testPath => $config) {
-			if (Endpoint::match($testPath, $alias)) {
-				return static::make_endpoint($alias, $config);
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Returns an endpoint by model class and action if one can be found.
-	 *
-	 * @param $modelClass
-	 * @param $action
-	 * @return null|EndpointInterface
-	 * @throws Exception
-	 */
-	public function endpointForModel($modelClass, $action) {
-		$path = "$action/*";
-
-		foreach (static::endpoints() as $testPath => $config) {
-			// exclude root endpoints which handle no specific classes
-			if (isset($config['class'])) {
-				if ($config['class'] == $modelClass) {
-					// we have matched by class, now see if the rest of the endpoint path matches
-					// using action and wildcard
-					if (Endpoint::match($path, $testPath)) {
-						return static::make_endpoint($path, $config);
-					}
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * @param $path
-	 * @return array|null
-	 */
-	public function findEndpointConfig($path) {
-		foreach (static::endpoints() as $test => $config) {
-			if (Endpoint::match($test, $path)) {
-				return $config;
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Return an endpoint using either $config['endpoint'] or the mangled api class (this) name. Overload in concrete
-	 * classes to provide additional initialisation/configuration.
-	 *
-	 * @param array $path
-	 * @param array $config
-	 * @param bool  $dereferenceBase if true then base endpoints will also be resolved, otherwise not
-	 * @return EndpointInterface
-	 * @throws Exception
-	 */
-	public static function make_endpoint($path, array $config, $dereferenceBase = true) {
-		$config = static::decode_config($config, true);
-
-		// TODO: is there a better way to do this rather than a convention?
-		$endpointClassName = $config['endpoint']
-			? $config['endpoint']
-			: str_replace('\\Apis\\', '\\Endpoints\\', get_called_class());
-
-		if (ClassInfo::exists($endpointClassName)) {
-			return Injector::inst()->create($endpointClassName, $path, static::decode_config($config, $dereferenceBase));
-		}
-	}
-
-	/**
-	 * Give a map of info decodes it into standard info packet optionally including any base information found.
-	 *
-	 * @param array $config
-	 *
-	 * @param bool  $dereferenceBase
-	 * @return array
-	 */
-	protected static function decode_config(array $config, $dereferenceBase = false) {
-		$merged = [
-			'accept_type' => static::config()->get('accept_type'),
-			'url'         => null,
-			'base'        => null,
-			'transport'   => static::config()->get('transport'),
-		];
-
-		if ($dereferenceBase && isset($config['base'])) {
-
-			if ($parentEndpoint = static::endpoint($config['base'])) {
-
-				$baseInfo = $parentEndpoint->getInfo();
-				$merged = array_merge(
-					$merged,
-					$baseInfo
-				);
-
-				if (isset($baseInfo['url'])) {
-					$config['base'] = $baseInfo['url'];
-				}
-			}
-		}
-		$merged = array_merge(
-			$merged,
-			$config
-		);
-
-		return $merged;
+	public static function endpoint($alias, array $moreMeta = []) {
+		return Endpoint::locate($alias, $moreMeta);
 	}
 
 	/**

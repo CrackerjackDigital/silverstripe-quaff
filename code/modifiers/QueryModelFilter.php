@@ -2,7 +2,6 @@
 namespace Quaff\Modifiers;
 
 use Modular\ModelExtension;
-use Modular\Object;
 use Quaff\Extensions\Model\Quaffable;
 use Quaff\Interfaces\Endpoint;
 
@@ -21,15 +20,11 @@ class QueryModelFilter extends ModelExtension {
 	 * TODO TEST IT!!!
 	 *
 	 * @param array                            $params
-	 * @param \Quaff\Interfaces\Quaffable|null $model
 	 */
-	public function updateQueryParameters(array &$params, \Quaff\Interfaces\Quaffable $model = null) {
+	public function updateQueryParameters(array &$params) {
 		$fields = [];
-
-		if (!$model) {
-			$model = singleton($this->endpoint()->getModelClass());
-		}
-
+		/** @var \Modular\Model|\Quaff\Interfaces\Quaffable $model */
+		$model = singleton($this->endpoint()->getModelClass());
 		if ($model) {
 			// TODO handle recursive mapping for arrays/collections.
 			// add model fields which are in the field map to the parameters as a name=value entry.

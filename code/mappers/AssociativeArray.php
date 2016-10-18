@@ -5,13 +5,9 @@ use DataObject;
 use Quaff\Interfaces\Mapper as MapperInterface;
 
 /**
- * Maps between SilverStripe model and arrays.
+ * Maps between SilverStripe model and associative array or map.
  */
-class ArrayMapper extends Mapper {
-	private static $content_types = [
-		'application/json'
-	];
-
+class AssociativeArray extends Mapper {
 	/**
 	 * Traverse the array data with a path like 'item.summary.title' in $data and return the value found at the end, if
 	 * any.
@@ -29,7 +25,7 @@ class ArrayMapper extends Mapper {
 		$pathLength = count($segments);
 		$parsed = 0;
 
-		while ($segment = array_shift($segments)) {
+		while (!is_null($segment = array_shift($segments))) {
 			$lastData = $data;
 
 			if (is_numeric($segment)) {

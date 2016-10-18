@@ -2,38 +2,15 @@
 namespace Quaff\Responses;
 
 use Quaff\Exceptions\Response as Exception;
+use Quaff\Interfaces\Buffer;
+use Quaff\Interfaces\Endpoint;
 use Quaff\Interfaces\Mapper;
 use Quaff\Interfaces\Quaffable;
 use Quaff\Interfaces\Reader;
-use Quaff\Mappers\ArrayMapper;
+use Quaff\Interfaces\Transport;
+use Quaff\Mappers\AssociativeArray;
 
 abstract class OK extends Response {
-
-	abstract public function read();
-
-	public function getVersion() {
-		return $this->meta('Version');
-	}
-
-	public function isOK() {
-		return !$this->isError();
-	}
-
-	public function isError() {
-		return false;
-	}
-
-	public function getItemCount() {
-		return $this->meta('ItemCount');
-	}
-
-	public function getStartIndex() {
-		return $this->meta('StartIndex');
-	}
-
-	public function getResultMessage() {
-		return self::GenericOKMessage;
-	}
 
 	/**
 	 * Return the items returned by the request as a list.
@@ -44,17 +21,46 @@ abstract class OK extends Response {
 	 * @throws \Quaff\Exceptions\Response
 	 */
 	public function getItems($options = Mapper::DefaultOptions) {
-		$models = new \ArrayList();
-
 		if ($this->isValid()) {
 			$contentType = $this->getContentType();
 
 			if (!$type = static::decode_content_type($contentType)) {
 				throw new Exception("Bad content type '$contentType'");
 			}
+			return $this->items($options);
+		}
+		// return an empty array list if we're not valid
+		return new \ArrayList();
+	}
+
+	public function items($options) {
+		return $this->models($options);
+	}
+
+	/**
+	 * Return list of Models populated from the raw data.
+	 *
+	 * Items are either existing found using 'findModel' or new models via 'makeModel'
+	 * updated from the item data via their 'quaff' method.
+	 *
+	 * @param  array|int $options
+	 * @return \ArrayList
+	 * @throws \Modular\Exceptions\NotImplemented
+	 * @throws \Quaff\Exceptions\Response
+	 */
+	public function models($options = null) {
+		$models = new \ArrayList();
+
+		if ($this->isValid()) {
+			$buffer = $this->getBuffer();
+
 			$endpoint = $this->getEndpoint();
 
-			while ($item = $this->read()) {
+			$responseCode = null;
+
+			$index = 1;
+
+			while ($item = $buffer->read($responseCode)) {
 				/** @var Quaffable $model */
 				if (!$model = $this->findModel($item, $options)) {
 
@@ -67,89 +73,17 @@ abstract class OK extends Response {
 				}
 				$model->quaff($endpoint, $item, $options);
 				$models->push($model);
+
+				$index++;
+			}
+			if ($responseCode != Transport::ResponseDecodeOK) {
+				throw new Exception("Error processing models on item number '$index'");
 			}
 		}
+		return $models;
 	}
 
-	/**
-	 * Return rawData as a json decoded value, generally an associative array.
-	 *
-	 * @return mixed
-	 * @throws Exception
-	 */
-	protected function json() {
-		if (is_null($json = json_decode($this->buffer, $this->get_config_setting('decode_options', self::ContentTypeJSON)))) {
-			$message = "Failed to load json from response raw data";
-			if ($error = json_last_error()) {
-				$message .= ": '$error'";
-			}
-			throw new Exception($message);
-		}
-		if ($itemPath = $this->endpoint->getItemPath()) {
-			$value = ArrayMapper::traverse($itemPath, $json, $found);
 
-			if (!$found) {
-				throw new Exception("Items node '$itemPath' not found in response");
-			}
-			return $value;
-		} else {
-			return $json;
-		}
-	}
-
-	/**
-	 * Return provided text as an xml DOM Document.
-	 *
-	 * @return \DOMDocument
-	 * @throws Exception
-	 */
-	protected function xml() {
-		libxml_use_internal_errors(true);
-		libxml_clear_errors();
-
-		$doc = new \DOMDocument();
-		if (!$doc->loadXML($this->buffer, $this->get_config_setting('decode_options', self::ContentTypeXML))) {
-
-			$message = "Failed to load document from response raw data";
-			if ($error = libxml_get_last_error()) {
-				$message .= ": '$error'";
-			}
-			throw new Exception($message);
-		}
-		$xpath = new \DOMXPath($doc);
-		if ($itemPath = $this->endpoint->getItemPath()) {
-			return $xpath->query($itemPath);
-		} else {
-			return $xpath->query('/');
-		}
-	}
-
-	/**
-	 * Return provided text as an xml DOM Document.
-	 *
-	 * @return \DOMDocument
-	 * @throws Exception
-	 */
-	protected function html() {
-		libxml_use_internal_errors(true);
-		libxml_clear_errors();
-
-		$doc = new \DOMDocument();
-		if (!$doc->loadHTML($this->buffer, $this->get_config_setting('decode_options', self::ContentTypeHTML))) {
-			$message = "Failed to load document from response raw data";
-
-			if ($error = libxml_get_last_error()) {
-				$message .= ": '$error'";
-			}
-			throw new Exception($message);
-		}
-		$xpath = new \DOMXPath($doc);
-		if ($itemPath = $this->endpoint->getItemPath()) {
-			return $xpath->query($itemPath);
-		} else {
-			return $xpath->query('/');
-		}
-	}
 
 	/**
 	 * Return an existing model from the provided item data or return null if not found. Override in implementation to
@@ -225,6 +159,30 @@ abstract class OK extends Response {
 			}
 		}
 		return null;
+	}
+
+	public function getVersion() {
+		return $this->meta('Version');
+	}
+
+	public function isOK() {
+		return !$this->isError();
+	}
+
+	public function isError() {
+		return false;
+	}
+
+	public function getItemCount() {
+		return $this->meta('ItemCount');
+	}
+
+	public function getStartIndex() {
+		return $this->meta('StartIndex');
+	}
+
+	public function getResultMessage() {
+		return self::GenericOKMessage;
 	}
 
 	/**

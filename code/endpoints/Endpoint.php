@@ -2,21 +2,22 @@
 
 namespace Quaff\Endpoints;
 
+use Injector;
 use Modular\Debugger;
-
 use Modular\Model;
 use Modular\Object;
 use Modular\tokens;
 use Quaff\Exceptions\Endpoint as Exception;
-use Quaff\Interfaces\Quaffable;
-use Quaff\Transport\Transport;
-use Quaff\Interfaces\Transport as TransportInterface;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
-use Modular\Controller;
-use Injector;
+use Quaff\Interfaces\Locator as LocatorInterface;
+use Quaff\Interfaces\Quaffable;
+use Quaff\Interfaces\Transport as TransportInterface;
+use Quaff\Transports\Protocol\http;
+use Quaff\Transports\Transport;
 
-class Endpoint extends Object implements EndpointInterface {
+class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 	use tokens;
+	use http;
 
 	const Version = '*';
 
@@ -24,39 +25,53 @@ class Endpoint extends Object implements EndpointInterface {
 	const FormatValues = 2;
 	const FormatBoth   = 3;
 
-	// override in concrete instance to give the class of the model returned by this endpoint
+	// override or set config in concrete instance to give the class of the model returned by this endpoint
 	const ModelClass = '';
+	private static $model;
 
-	// override in concrete instance to give the class of the response returned by this endpoint
+	// override or set config in concrete instance to give the class of the response returned by this endpoint
 	const ResponseClass = '';
+	private static $response;
 
+	// override or set config in concrete instance to give the class of the transport returned by this endpoint
+	const TransportClass = '';
+	private static $transport;
+
+	// override or set config in concrete instance to give the class of the error returned by this endpoint
 	const ErrorClass = 'Quaff\Responses\Error';
+	private static $error;
 
-	/** @var  string the endpoint alias e.g 'list:entries */
-	protected $alias;
+	/** @var  string the endpoint alias e.g 'list:entries' set in constructor */
+	private static $alias;
+
+	/** @var array of aliases that this Endpoint uses to fill out it's own meta */
+	private static $parents = [
+		#   'directory:assets',
+		#   'filetype:csv'
+	];
 
 	/** @var array endpoint information merged in constructor */
-	protected $info = [
+	private static $meta = [
 		#	'path' => '/api/{version}/',        path relative to base url
 		#   'base' => 'public'                  base path info
+		#   'accept_type' => 'application/json'
+	];
+	// these meta variables will taken from parent meta values and concatenated to build up a full path, see buildMetaData
+	private static $meta_append = [
+		'url'  => '/',
+		'path' => '/',
 	];
 
 	private static $default_params = [];
 
 	private static $version = '';
 
-	public function __construct($alias, array $info = []) {
-		$this->alias = $alias;
-		$this->info = $info;
+	//set by ctor as merge of config.config and passed meta parameter
+	protected $metaData;
 
+	public function __construct(array $moreMeta = []) {
+		$this->metaData = $this->buildMetaData($moreMeta);
 		parent::__construct();
-	}
-
-	/**
-	 * Perform any initialisation, e.g. authentication, clearing existing data etc.
-	 */
-	public function init() {
-		$this->extend('quaffEndpointInit');
 	}
 
 	/**
@@ -66,7 +81,7 @@ class Endpoint extends Object implements EndpointInterface {
 		ob_start();
 
 		$this->debugger(Debugger::DebugTrace)
-			->toFile(Debugger::DebugTrace, '../logs/importer-sync.log')
+			->toFile(Debugger::DebugTrace, $this->getAlias())
 			->sendFile('servers+thames@moveforward.co.nz');
 
 		$this->extend('startSync');
@@ -78,7 +93,7 @@ class Endpoint extends Object implements EndpointInterface {
 
 		/** @var \Quaff\Interfaces\Response $response */
 		foreach ($this->quaff() as $response) {
- 			if ($response->isValid()) {
+			if ($response->isValid()) {
 				if ($items = $response->getItems()) {
 
 					if ($count = $items->count()) {
@@ -94,7 +109,7 @@ class Endpoint extends Object implements EndpointInterface {
 
 								$index++;
 
-							} catch(Exception $e) {
+							} catch (Exception $e) {
 								static::debug_message("Failed to add model: " . $e->getMessage(), Debugger::DebugWarn);
 							}
 						}
@@ -131,11 +146,9 @@ class Endpoint extends Object implements EndpointInterface {
 		);
 
 		do {
-			$uri = $this->uri($queryParams, $model);
-
 			/** @var \Quaff\Responses\Response $response */
 			$response = $transport->get(
-				$uri,
+				$this->getURI(Transport::ActionRead),
 				$queryParams
 			);
 			yield $response;
@@ -144,75 +157,82 @@ class Endpoint extends Object implements EndpointInterface {
 	}
 
 	/**
-	 * Return full remote url with any query parameters from params and from model passed.
+	 * Most meta is treated as normal for silverstripe config, however some values such as url and path are instead appended with those from the
+	 * Endpoint aliases listed as 'parents'. So if an Endpoint has a path of 'assets' and it has a parent listed with a path of '/var/www/html' then
+	 * the path of the endpoint will be '/var/www/html/assets'. If more than one parent is listed then paths are appended so first parent is first, then
+	 * second parent is appended, then finally this endpoints path.
 	 *
-	 * @param array          $params additional query string parameters by reference so can do e.g. pager extensions
-	 * @param Quaffable|null $model  which provided parameters to add to the url
-	 * @return string
+	 * @param array $moreMeta
+	 * @return mixed
 	 */
-	protected function uri(array &$params = [], $model = null) {
+	public function buildMetaData(array $moreMeta = []) {
+		$parents = $this->config()->get('parents') ?: [];
+		$appendMeta = $this->config()->get('meta_append') ?: [];
 
-		$url = Controller::join_links(
-			$this->getBaseURL(),
-			$this->getURL()
-		);
-		$queryParams = $this->queryParams($params, $model);
-		$uriParams = $this->uriParams($params, $model);
-
-		return $this->prepareURI($url, $uriParams, $queryParams);
-	}
-
-	/**
-	 * Returns an array of query string segments in preference of config.params.get, model fields then params.
-	 *
-	 * @param array                $params by reference so can do e.g. pager extensions
-	 * @param Quaffable|Model|null $model if not supplied getModelClass singleton will be used
-	 * @return array
-	 */
-	protected function queryParams(array &$params = [], $model = null) {
-		$params = array_merge(
-			static::get_config_setting('default_params', $this->method()) ?: [],
-			$params
-		);
-
-		$this->extend('updateQueryParameters', $params, $model);
-
-		return $params;
-	}
-
-	/**
-	 * Replaces tokens in the url which values from params. Override in concrete classes to provide custom url mangling.
-	 *
-	 * @param array $params
-	 * @param null  $model
-	 * @return array map of token name => value for parameters to add to the remote uri called, e.g. [ 'id' => 1212 ]
-	 */
-	public function uriParams(array &$params, $model = null) {
-		$this->extend('updateURIParameters', $params, $model);
-		return [];
-	}
-
-	/**
-	 * Build a query string, we trust the parameters to have been properly encoded already.
-	 *
-	 * TODO handle arrays as values
-	 *
-	 * @param string $url
-	 * @param array  $queryParams
-	 * @return string
-	 */
-	protected function prepareURI($url, array $urlParams, array $queryParams) {
-		$query = '';
-		foreach ($queryParams as $name => $value) {
-			$query .= "&$name=$value";
+		$built = [];
+		foreach ($parents as $parentAlias) {
+			/** @var Endpoint $parentEndpoint */
+			if ($parentEndpoint = static::locate($parentAlias)) {
+				foreach ($appendMeta as $name => $separator) {
+					if ($value = $parentEndpoint->meta($name)) {
+						$built[ $name ] = $value . $separator;
+					}
+				}
+			}
 		}
-		// merge provided params into the Endpoints default params, provided take preference
-		$url = $this->detokenise(
-			$url,
-			$urlParams
+
+		// now we tack on our own append values which are not merged via 'normal' config mechanism
+		$meta = $this->config()->get('meta');
+		foreach ($appendMeta as $name => $separator) {
+			if (isset($meta[ $name ])) {
+				$built[ $name ] = (isset($built[ $name ]) ? $built[ $name ] : '') . $meta[ $name ];
+			}
+		}
+		// now get the values which are not 'append' values and which have been merged 'normally' by config so we can merge in to completed metaData
+		$noAppended = array_diff_key(
+			$this->config()->get('meta'),
+			$appendMeta
 		);
 
-		return $url . '?' . substr($query, 1);
+		return array_merge_recursive(
+			array_filter($built),
+			$moreMeta,
+			$noAppended
+		);
+	}
+
+	/**
+	 * Find an object based on the specs, optionally caching it for later re-retrieval.
+	 *
+	 * @param  string $alias whatever is needed by the locator to find the target.
+	 * @param array   $moreMeta
+	 * @return \Generator yields instance of class being called which matches test criteria
+	 */
+	public static function locate($alias, array $moreMeta = []) {
+		foreach (Endpoint::subclasses() as $namespaced => $className) {
+			if (\Config::inst()->get($namespaced, 'alias') == $alias) {
+				return new $namespaced($moreMeta);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Test alias is the same as this endpoints alias
+	 *
+	 * @param string $alias to match
+	 * @return bool
+	 */
+	public function match($alias) {
+		$thisAlias = static::config()->get('alias', \Config::UNINHERITED);
+		return $thisAlias == $alias;
+	}
+
+	/**
+	 * Perform any initialisation, e.g. authentication, clearing existing data etc.
+	 */
+	public function init() {
+		$this->extend('quaffEndpointInit');
 	}
 
 	/**
@@ -278,6 +298,14 @@ class Endpoint extends Object implements EndpointInterface {
 		return null;
 	}
 
+	public function getMetaData() {
+		return $this->metaData;
+	}
+
+	public function auth() {
+		return true;
+	}
+
 	/**
 	 * Returns the method suffix from the alias, e.g. 'list' for 'list:entries'.
 	 *
@@ -288,53 +316,63 @@ class Endpoint extends Object implements EndpointInterface {
 		return $method;
 	}
 
-	public static function match($pattern, $alias) {
-		$alias = preg_replace('/{[^}]+}/', '*', $alias);
-		return fnmatch($pattern, $alias);
-	}
-
 	public function version() {
 		return $this->config()->get('version') ?: static::Version;
 	}
 
-	public function auth() {
-		return true;
-	}
-
 	public function getAlias() {
-		return $this->alias;
-	}
-
-	public function getInfo() {
-		return $this->info;
-	}
-
-	public function getItemPath() {
-		return '';
-	}
-
-	public function getModelClass() {
-		return $this->info('model') ?: static::ModelClass;
+		return $this->config()->get('alias');
 	}
 
 	public function getResponseClass() {
-		return $this->info('response') ?: static::ResponseClass;
+		return $this->config()->get('response') ?: static::ResponseClass;
+	}
+
+	public function getTransportClass() {
+		return $this->config()->get('transport') ?: static::TransportClass;
+	}
+
+	public function getModelClass() {
+		return $this->config()->get('model') ?: static::ModelClass;
 	}
 
 	public function getErrorClass() {
-		return $this->info('error') ?: static::ErrorClass;
+		return $this->config()->get('error') ?: static::ErrorClass;
 	}
+
 	/**
 	 * @return string
 	 */
 	public function getEndpointClass() {
-		return $this->info('endpoint');
+		return get_called_class();
 	}
+
 	/**
+	 * Return all meta data or for a specific key if supplied.
+	 *
+	 * @param string|null $key
+	 * @return null
+	 */
+	public function meta($key = null) {
+		if (func_num_args() > 0) {
+			return isset($this->metaData[ $key ]) ? $this->metaData[ $key ] : null;
+		} else {
+			return $this->metaData;
+		}
+	}
+
+	/**
+	 * Return a full uri for url and path for the action. Uses prepareURI provided by an extension
+	 * such as http.
+	 *
+	 * @param string $action
 	 * @return string
 	 */
-	public function getTransportClass() {
-		return $this->info('transport');
+	public function getURI($action) {
+		return $this->prepareURI(
+			\Controller::join_links($this->getURL(), $this->getPath()),
+			$action
+		);
 	}
 
 	/**
@@ -343,31 +381,41 @@ class Endpoint extends Object implements EndpointInterface {
 	 * @return string
 	 */
 	public function getURL() {
-		return $this->info('url');
+		return $this->meta('url');
 	}
 
 	/**
-	 * @return string
-	 */
-	public function getBaseURL() {
-		return $this->info('base');
-	}
-
-	/**
+	 * Return the path which is appended to the url for this endpoint, url may be from a parent
+	 * but path is specifically for this resource.
+	 *
 	 * @return string
 	 */
 	public function getPath() {
-		return $this->info('path');
+		return $this->meta('path');
+	}
+
+	/**
+	 * Return path to items collection in the overall response data.
+	 *
+	 * e.g. 'items' for the items property in the following json response:
+	 *  {
+	 *      count: 100,
+	 *      items: [
+	 *              { id: 1, ... }
+	 *      ]
+	 *  }
+	 *
+	 * @return string
+	 */
+	public function getItemPath() {
+		return $this->meta('item_path');
 	}
 
 	/**
 	 * @return string lowercase acceptType e.g. application/json
 	 */
 	public function getAcceptType() {
-		return strtolower($this->info('accept_type') ?: $this->config()->get('accept_type'));
+		return strtolower($this->meta('accept_type'));
 	}
 
-	public function info($key) {
-		return isset($this->info[ $key ]) ? $this->info[ $key ] : null;
-	}
 }

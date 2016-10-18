@@ -1,7 +1,7 @@
 <?php
 namespace Quaff\Interfaces;
 
-interface Transport {
+interface Transport extends Reader, Buffer, Protocol, Decoder {
 	const ResponseDecodeOK    = 'OK';
 	const ResponseDecodeError = 'Error';
 
@@ -14,28 +14,20 @@ interface Transport {
 	const ActionCreate   = 9;         // 8 + 1 can't create without write
 	const ActionTruncate = 17;        // 16 + 1 can't truncate without write
 	const ActionDelete   = 36;        // 32 + 4 can't delete without write
+	const ActionDecode   = 64;        // used for native options to do with decoding data
+	const ActionEncode   = 128;
 
-	const MetaContentType   = 'ContentType';
-	const MetaContentLength = 'ContentLength';
+	const MetaContentType   = 'Content-Type';
+	const MetaContentLength = 'Content-Length';
 	const MetaException     = 'Exception';
 	const MetaResultMessage = 'ResultMessage';
 	const MetaResponseCode  = 'ResponseCode';
 
 	/**
 	 * @param string $uri
-	 * @param array  $options to pass to underlying transport mechanism, e.g. guzzle or curl or php context
+	 * @param array  $queryParams to pass to underlying transport mechanism, e.g. guzzle or curl or php context
 	 * @return Response
 	 */
-	public function get($uri, array $options = []);
+	public function get($uri, array $queryParams = []);
 
-	/**
-	 * Check if a resource, file etc exists, connection can be made etc. e.g. HTTP may do a HEAD request instead of getting the full document.
-	 *
-	 * @param       $uri
-	 * @param       $responseCode
-	 * @param null  $contentType
-	 * @param null  $contentLength
-	 * @return mixed
-	 */
-	public function ping($uri, &$responseCode, &$contentType = null, &$contentLength = null);
 }

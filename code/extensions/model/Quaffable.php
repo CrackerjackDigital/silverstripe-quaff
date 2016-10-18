@@ -8,9 +8,9 @@ use Modular\bitfield;
 use Modular\config;
 use Modular\ModelExtension;
 use Modular\owned;
-use Quaff\Endpoints\Endpoint;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Quaffable as QuaffableInterface;
+use Quaff\Exceptions\Mapping as Exception;
 use Quaff\Mappers\Mapper;
 
 class Quaffable extends ModelExtension
@@ -30,8 +30,9 @@ class Quaffable extends ModelExtension
 	public function quaff(EndpointInterface $endpoint, $data, $options = self::DefaultQuaffOptions) {
 		$result = null;
 
+		// find mapper which handles the endpoints accept type
 		/** @var Mapper $mapper */
-		if ($mapper = Mapper::locate($endpoint)) {
+		foreach (Mapper::locate($endpoint->getAcceptType()) as $mapper) {
 
 			// notify the model they're about to be quaffed
 			$this->owner()->extend('beforeQuaff', $endpoint, $mapper, $data);
@@ -52,14 +53,12 @@ class Quaffable extends ModelExtension
 	public function quaffMapForEndpoint(EndpointInterface $endpoint, $options = self::MapDeep) {
 		$maps = $this->owner()->config()->get('quaff_map');
 		$alias = $endpoint->getAlias();
-		$map = [];
 
-		foreach ($maps as $match => $map) {
-			if (Endpoint::match($match, $alias)) {
-				break;
-			}
-			$map = [];
+		if (!isset($maps[$alias])) {
+			throw new Exception("No map for endpoint '$alias'");
 		}
+		$map = $maps[$alias];
+
 		$newMap = [];
 
 		if ($map) {

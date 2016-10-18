@@ -6,9 +6,9 @@ namespace Quaff\Mappers;
  *
  * @package Quaff\Mappers
  */
-class ArrayIndexMapper extends ArrayMapper {
+class IndexedArray extends AssociativeArray {
 	/**
-	 * Map of fields names as found in the source to their column in the data.
+	 * AssociativeArray of fields names as found in the source to their column in the data.
 	 * @var array
 	 */
 	private static $index_map = [
@@ -26,9 +26,12 @@ class ArrayIndexMapper extends ArrayMapper {
 	 */
 	public static function traverse($dataPath, array $data, &$found = false) {
 		$map = static::config()->get('index_map');
-		if ($index = array_search($dataPath, $map)) {
-			$dataPath = $map[$index];
+		$index = array_search($dataPath, $map);
+
+		if (false !== $index) {
+			$dataPath = $index;
 		}
+		// numerical indexing may be specified though not as clean
 		return parent::traverse($dataPath, $data, $found);
 	}
 }

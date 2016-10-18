@@ -27,36 +27,10 @@ interface Api {
 	/**
 	 * Return a configured endpoint for a path.
 	 *
-	 * @param $alias
+	 * @param string $alias
+	 * @param array $moreMeta additional meta to pass to endpoint ctor.
 	 * @return Endpoint|Object
 	 */
-	public static function endpoint($alias);
-
-	/**
-	 * Return a configured endpoint for a model and action.
-	 *
-	 * @param $modelClass
-	 * @param $action
-	 * @return Endpoint
-	 */
-	public function endpointForModel($modelClass, $action);
-
-	/**
-	 * Find and return config for an endpoint.
-	 *
-	 * @param $path
-	 * @return bool
-	 */
-	public function findEndpointConfig($path);
-
-	/**
-	 * Create and return an endpoint with provided info..
-	 *
-	 * @param string $path
-	 * @param array  $info
-	 * @param bool   $decodeInfo
-	 * @return \Quaff\Interfaces\Endpoint
-	 */
-	public static function make_endpoint($path, array $info, $decodeInfo = true);
+	public static function endpoint($alias, array $moreMeta = []);
 
 }

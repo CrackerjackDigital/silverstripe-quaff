@@ -4,12 +4,17 @@ namespace Quaff\Responses;
 use ArrayList;
 use Modular\Exceptions\NotImplemented;
 use Modular\Object;
+use Modular\reflection;
 use Quaff\Exceptions\Response as Exception;
+use Quaff\Interfaces\Buffer;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
+use Quaff\Interfaces\Endpoint;
+use Quaff\Interfaces\Locator;
 use Quaff\Interfaces\Response as ResponseInterface;
 use Quaff\Interfaces\Mapper as MapperInterface;
-use Quaff\Mappers\ArrayMapper;
-use Quaff\Transport\Reader;
+use Quaff\Interfaces\Transport;
+use Quaff\Mappers\AssociativeArray;
+use Quaff\Transports\Reader;
 
 // roll on php 5.6 wider support so can use expressions in constanta!
 if (!defined('QUAFF_RESPONSE_DEFAULT_JSON_DECODE_OPTIONS')) {
@@ -22,7 +27,9 @@ if (!defined('QUAFF_RESPONSE_DEFAULT_HTML_DECODE_OPTIONS')) {
 	define('QUAFF_RESPONSE_DEFAULT_HTML_DECODE_OPTIONS', LIBXML_COMPACT | LIBXML_NOERROR | LIBXML_NONET | LIBXML_NOWARNING | LIBXML_PARSEHUGE | LIBXML_PEDANTIC | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOBLANKS);
 }
 
-abstract class Response extends Object implements ResponseInterface {
+abstract class Response extends Object implements Locator{
+	use reflection;
+
 	const SimpleMatchKey = 'request';
 
 	const RawDataArray = 'array';
@@ -52,28 +59,28 @@ abstract class Response extends Object implements ResponseInterface {
 	// native result code
 	protected $resultCode;
 
-	// either data or a stream which can be handled by a reader
-	protected $buffer;
-
 	// information about the response
 	protected $metaData;
 
 	/** @var EndpointInterface */
 	protected $endpoint = null;
 
+	/** @var null|\Quaff\Interfaces\Buffer  */
+	protected $buffer = null;
+
 	/**
 	 * Response constructor.
 	 *
 	 * @param EndpointInterface $endpoint
-	 * @param                   $resultCode
-	 * @param string|resource   $buffer   e.g. body of HTTP response
+	 * @param mixed             $responseCode
+	 * @param Buffer            $buffer   e.g. body of HTTP response
 	 * @param array             $metaData extra information such as headers
 	 */
-	public function __construct(EndpointInterface $endpoint, $resultCode, $buffer, $metaData) {
+	public function __construct(EndpointInterface $endpoint, $responseCode, Buffer $buffer = null, array $metaData) {
 		$this->endpoint = $endpoint;
-		$this->resultCode = $resultCode;
-		$this->buffer = $buffer;
 		$this->metaData = $metaData;
+		$this->buffer = $buffer;
+
 		parent::__construct();
 	}
 
@@ -104,14 +111,6 @@ abstract class Response extends Object implements ResponseInterface {
 	}
 
 	/**
-	 * Return the data or a stream suitable for use by a reader trait
-	 * @return resource|string
-	 */
-	public function getBuffer() {
-		return $this->buffer;
-	}
-
-	/**
 	 * Return native or implementation defined status code, e.g. '200' for HTTP.
 	 *
 	 * @return mixed
@@ -126,7 +125,7 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @return string|null
 	 */
 	public function getResultMessage() {
-		return $this->meta('ResultMessage') ?: self::GenericFailMessage;
+		return $this->meta(Transport::MetaResultMessage) ?: _t('Transport.Messages.Error', 'Error');
 	}
 
 	/**
@@ -136,7 +135,7 @@ abstract class Response extends Object implements ResponseInterface {
 	 * @return string
 	 */
 	public function getContentType() {
-		return $this->meta('ContentType');
+		return $this->meta(Transport::MetaContentType);
 	}
 
 	/**
@@ -146,8 +145,19 @@ abstract class Response extends Object implements ResponseInterface {
 		return $this->endpoint;
 	}
 
+	/**
+	 * @return null|\Quaff\Interfaces\Buffer
+	 */
+	public function getBuffer() {
+		return $this->buffer;
+	}
+
+	/**
+	 * Return the uri of the buffer.
+	 * @return string
+	 */
 	public function getURI() {
-		return $this->meta('URI');
+		return $this->getBuffer()->getURI();
 	}
 
 	/**
@@ -160,4 +170,39 @@ abstract class Response extends Object implements ResponseInterface {
 		return !$this->isError();
 	}
 
+	/**
+	 * Find an object based content type
+	 *
+	 * @param  string                    $contentType
+	 * @param \Quaff\Interfaces\Endpoint $endpoint
+	 * @param null                       $responseCode
+	 * @param \Quaff\Interfaces\Buffer   $buffer
+	 * @param array                      $metaData
+	 * @return \Generator yields instance of class being called which matches test criteria
+	 */
+	public static function locate($contentType, Endpoint $endpoint = null, $responseCode = null, Buffer $buffer = null, array $metaData = null) {
+		foreach (static::subclasses() as $className) {
+			/** @var Locator $response */
+			$response = singleton($className);
+			if ($response->match($contentType)) {
+				return $response;
+			}
+		}
+	}
+
+	/**
+	 * Test the passed parameter against the instance, and return true if content type is handled as registered in config.content_types
+	 *
+	 * @param string $test
+	 * @return bool
+	 */
+	public function match($test) {
+		$contentTypes = $this->config()->get('content_types') ?: [];
+		foreach ($contentTypes as $contentType) {
+			if ($contentType == $test) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

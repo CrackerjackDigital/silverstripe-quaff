@@ -24,15 +24,16 @@ class FieldList extends URI {
 	 *
 	 * - adds fields=field1,field2 parameter
 	 *
-	 * @param Quaffable|\DataObject|null $model
 	 * @param array                      $params
 	 * @return array
 	 */
-	public function updateQueryParameters(&$params, $model) {
+	public function updateQueryParameters(&$params) {
+		// TODO get the model
+		$model = null;
 		if ($model) {
 			$delimiter = Mapper::path_delimiter();
 
-			$map = $model->quaffMapForEndpoint($this->owner(), Quaffable::MapOwnFieldsOnly);
+			$map = $model->quaffMapForEndpoint($this(), Quaffable::MapOwnFieldsOnly);
 
 			/* map out the 'api' fields which exist in a remote relationship and return
 			   first part of the 'field' e.g. 'Description' for 'Description.Text' so request
