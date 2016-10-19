@@ -66,7 +66,7 @@ abstract class OK extends Response {
 
 					if (!$model = $this->createEmptyModel($item, $options)) {
 
-						$this->debug_error("Failed to locate model");
+						$this->debug_error("Failed to locate or create model index '$index'");
 						continue;
 
 					}
