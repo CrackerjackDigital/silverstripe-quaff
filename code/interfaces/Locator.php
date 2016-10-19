@@ -5,10 +5,15 @@ interface Locator {
 	/**
 	 * Find an object based on the specs, optionally caching it for later re-retrieval.
 	 *
-	 * @param  mixed $endpoint whatever is needed by the locator to find the target.
-	 * @return Object
+	 * @param  string $alias whatever is needed by the locator to find the target.
+	 * @return \Generator yields instance of class being called which matches test criteria
 	 */
-	public static function locate(Endpoint $endpoint);
+	public static function locate($alias);
 
-	public function match(Endpoint $endpoint);
+	/**
+	 * Test the passed parameter against the instance, e.g. alias is the same
+	 * @param string $test
+	 * @return bool
+	 */
+	public function match($test);
 }

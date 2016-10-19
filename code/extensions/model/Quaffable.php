@@ -7,15 +7,17 @@ namespace Quaff\Extensions\Model;
 use Modular\bitfield;
 use Modular\config;
 use Modular\ModelExtension;
-use Quaff\Endpoints\Endpoint;
+use Modular\owned;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Quaffable as QuaffableInterface;
+use Quaff\Exceptions\Mapping as Exception;
 use Quaff\Mappers\Mapper;
 
 class Quaffable extends ModelExtension
 	implements QuaffableInterface {
 	use config;
 	use bitfield;
+	use owned;
 
 	/**
 	 * Import from $data into object for the $endpoint, does not write the model.
@@ -28,8 +30,9 @@ class Quaffable extends ModelExtension
 	public function quaff(EndpointInterface $endpoint, $data, $options = self::DefaultQuaffOptions) {
 		$result = null;
 
+		// find mapper which handles the endpoints accept type
 		/** @var Mapper $mapper */
-		if ($mapper = Mapper::locate($endpoint)) {
+		if ($mapper = Mapper::locate($endpoint->getAcceptType())) {
 
 			// notify the model they're about to be quaffed
 			$this->owner()->extend('beforeQuaff', $endpoint, $mapper, $data);
@@ -43,28 +46,19 @@ class Quaffable extends ModelExtension
 		return $result;
 	}
 
-	/**
-	 * @return Model
-	 */
-	public function owner() {
-		return $this->owner;
-	}
-
 	public function toMap() {
 		return $this->owner()->toMap();
 	}
 
 	public function quaffMapForEndpoint(EndpointInterface $endpoint, $options = self::MapDeep) {
 		$maps = $this->owner()->config()->get('quaff_map');
-		$path = $endpoint->getPath();
-		$map = [];
+		$alias = $endpoint->getAlias();
 
-		foreach ($maps as $match => $map) {
-			if (Endpoint::match($match, $path)) {
-				break;
-			}
-			$map = [];
+		if (!isset($maps[$alias])) {
+			throw new Exception("No map for endpoint '$alias'");
 		}
+		$map = $maps[$alias];
+
 		$newMap = [];
 
 		if ($map) {

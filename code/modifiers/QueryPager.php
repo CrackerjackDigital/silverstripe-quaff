@@ -10,7 +10,7 @@ use Modular\ModelExtension;
  */
 class QueryPager extends ModelExtension {
 
-	public function updateQueryParameters(array &$params, $model = null) {
+	public function updateQueryParameters(array &$params) {
 		list($startPage, $pageLength, $pageVar, $lengthVar) = $this->pagination();
 
 		if ($pageVar && !is_null($startPage)) {

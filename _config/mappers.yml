@@ -6,3 +6,7 @@ After:
 Quaff\Mappers\ArrayMapper:
   accept_types:
     - 'application/json'
+Quaff\Mappers\ArrayIndexMapper:
+  accept_types:
+    - 'text/csv'
+    - 'text/plain'

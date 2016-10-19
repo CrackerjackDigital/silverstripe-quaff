@@ -3,6 +3,8 @@ namespace Quaff\Interfaces;
 
 interface Response {
 
+	public function getRawData();
+	
 	/**
 	 * Return a response code, e.g. for HTTP this would be the Response Code
 	 * @return mixed
@@ -28,6 +30,12 @@ interface Response {
 	 *      false if something returned (maybe empty though)
 	 */
 	public function isError();
+
+	/**
+	 * Return the opposite of isError
+	 * @return boolean
+	 */
+	public function isOK();
 
 	/**
 	 * Check if a response is valid, that is it may not be an error, but it also might not be valid, such as containing correctly formed data or a wrong

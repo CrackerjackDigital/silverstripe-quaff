@@ -5,52 +5,9 @@ use DataObject;
 use Quaff\Interfaces\Mapper as MapperInterface;
 
 /**
- * Maps between SilverStripe model and arrays.
+ * Maps between SilverStripe model and associative array or map.
  */
-class ArrayMapper extends Mapper {
-	private static $content_types = [
-		'application/json'
-	];
-
-	/**
-	 * Returns an array build as a nested structure mapping flat values in the array or DataObject passed
-	 * to a nested array structure using the provided fieldMap (essentially the reveres of
-	 * map_to_model which is easier to understand).
-	 * e.g. with map 'RateTitle' => 'rate.summary.title' and data['RateTitle'] = 'Fred' output
-	 * with be
-	 *  array(
-	 *      'rate' => array(
-	 *          'summary' => array(
-	 *              'title' => 'Fred'
-	 *          )
-	 *      )
-	 *  )
-	 *
-	 * @param                        $fromModelOrArray - flat source key/value pairs, e.g. from DataObject.toMap
-	 * @param                        $fieldMap         - map of source keys to output structure with '.' syntax
-	 * @param                        $skipNulls        - if value not in $data or null don't include in output array
-	 * @return array
-	 */
-	public function spout($fromModelOrArray, array $fieldMap, $skipNulls) {
-		if ($fromModelOrArray instanceof DataObject) {
-			$fromModelOrArray = $fromModelOrArray->toMap();
-		}
-
-		$data = array();
-
-		foreach ($fieldMap as $localName => $path) {
-
-			if ((!$skipNulls) || array_key_exists($localName, $fromModelOrArray)) {
-
-				self::build($this, $path, $fromModelOrArray[ $localName ], $data);
-
-			}
-		}
-
-		return $data;
-
-	}
-
+class AssociativeArray extends Mapper {
 	/**
 	 * Traverse the array data with a path like 'item.summary.title' in $data and return the value found at the end, if
 	 * any.
@@ -68,7 +25,7 @@ class ArrayMapper extends Mapper {
 		$pathLength = count($segments);
 		$parsed = 0;
 
-		while ($segment = array_shift($segments)) {
+		while (!is_null($segment = array_shift($segments))) {
 			$lastData = $data;
 
 			if (is_numeric($segment)) {
@@ -127,4 +84,42 @@ class ArrayMapper extends Mapper {
 
 	}
 
+	/**
+	 * Returns an array build as a nested structure mapping flat values in the array or DataObject passed
+	 * to a nested array structure using the provided fieldMap (essentially the reveres of
+	 * map_to_model which is easier to understand).
+	 * e.g. with map 'RateTitle' => 'rate.summary.title' and data['RateTitle'] = 'Fred' output
+	 * with be
+	 *  array(
+	 *      'rate' => array(
+	 *          'summary' => array(
+	 *              'title' => 'Fred'
+	 *          )
+	 *      )
+	 *  )
+	 *
+	 * @param                        $fromModelOrArray - flat source key/value pairs, e.g. from DataObject.toMap
+	 * @param                        $fieldMap         - map of source keys to output structure with '.' syntax
+	 * @param                        $skipNulls        - if value not in $data or null don't include in output array
+	 * @return array
+	 */
+	public function spout($fromModelOrArray, array $fieldMap, $skipNulls) {
+		if ($fromModelOrArray instanceof DataObject) {
+			$fromModelOrArray = $fromModelOrArray->toMap();
+		}
+
+		$data = array();
+
+		foreach ($fieldMap as $localName => $path) {
+
+			if ((!$skipNulls) || array_key_exists($localName, $fromModelOrArray)) {
+
+				self::build($this, $path, $fromModelOrArray[ $localName ], $data);
+
+			}
+		}
+
+		return $data;
+
+	}
 }
