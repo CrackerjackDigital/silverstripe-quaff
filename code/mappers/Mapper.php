@@ -232,30 +232,37 @@ abstract class Mapper extends Object
 	}
 
 	/**
-	 * Return a mapper which can handle the provided endpoint's data type (acceptType).
+	 * Return a mapper via depth-first traversal of class heirarchy derived from Mapper
+	 * which can handle the provided endpoint's data type (acceptType).
 	 *
 	 * @param string $acceptType
-	 * @return \Generator yields Mapper instances which handle provided acceptType
+	 * @return \Quaff\Interfaces\Mapper
 	 * @throws Exception
 	 */
 	public static function locate($acceptType) {
-		$mapper = static::cache($acceptType);
-
-		if ($mapper) {
-			yield $mapper;
+		if ($mapper = static::cache($acceptType)) {
+			return $mapper;
 		}
-		foreach (ClassInfo::subclassesFor('Quaff\Mappers\Mapper') as $className) {
-			if ($className == 'Quaff\Mappers\Mapper') {
+		foreach (ClassInfo::subclassesFor(get_called_class()) as $className) {
+			if ($className == get_called_class()) {
 				continue;
 			}
 			/** @var Mapper $mapper */
 			$mapper = Injector::inst()->create($className);
 
-			if ($mapper->match($acceptType)) {
-				static::cache($acceptType, $mapper);
-				yield $mapper;
+			// depth-first traversal of class heirarchy
+			if (!$sub = $mapper::locate($acceptType)) {
+				// try this class
+				if ($mapper->match($acceptType)) {
+					static::cache($acceptType, $mapper);
+					break;
+				}
+			} else {
+				// mapper was found in subclasses
+				$mapper = $sub;
 			}
 		}
+		return $mapper;
 	}
 
 	/**

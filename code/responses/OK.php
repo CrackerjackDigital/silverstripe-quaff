@@ -38,7 +38,7 @@ abstract class OK extends Response {
 	}
 
 	/**
-	 * Return list of Models populated from the raw data.
+	 * Return list of Models populated from the raw data. They are not written to the database yet.
 	 *
 	 * Items are either existing found using 'findModel' or new models via 'makeModel'
 	 * updated from the item data via their 'quaff' method.

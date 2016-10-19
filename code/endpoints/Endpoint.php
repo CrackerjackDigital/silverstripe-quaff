@@ -87,7 +87,7 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 		$this->extend('startSync');
 		$this->init();
 
-		$models = new \ArrayList();
+		$written = new \ArrayList();
 
 		$index = 0;
 
@@ -103,7 +103,7 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 						foreach ($items as $model) {
 							try {
 								$model->write();
-								$models->push($model);
+								$written->push($model);
 
 								static::debug_trace($index . ":" . var_dump($model->toMap()));
 
@@ -123,11 +123,13 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 				$this->debug_error("Error syncing model response: " . $response->getResultMessage());
 				break;
 			}
+			ob_flush();
+
 		}
-		$this->extend('endSync', $response, $models);
+		$this->extend('endSync', $response, $written);
 		ob_flush();
 
-		return $models;
+		return $written;
 	}
 
 	/**

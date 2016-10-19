@@ -32,7 +32,7 @@ class Quaffable extends ModelExtension
 
 		// find mapper which handles the endpoints accept type
 		/** @var Mapper $mapper */
-		foreach (Mapper::locate($endpoint->getAcceptType()) as $mapper) {
+		if ($mapper = Mapper::locate($endpoint->getAcceptType())) {
 
 			// notify the model they're about to be quaffed
 			$this->owner()->extend('beforeQuaff', $endpoint, $mapper, $data);
