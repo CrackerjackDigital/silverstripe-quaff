@@ -28,7 +28,7 @@ interface Mapper {
 	 *
 	 * @return array
 	 */
-	public function contentTypes();
+	public function getContentTypes();
 
 	/**
 	 * @param array      $fromData

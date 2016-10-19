@@ -171,6 +171,14 @@ abstract class Response extends Object implements Locator{
 	}
 
 	/**
+	 * By default a response is automatically complete.
+	 * @return bool
+	 */
+	public function isComplete() {
+		return true;
+	}
+
+	/**
 	 * Find an object based content type
 	 *
 	 * @param  string                    $contentType

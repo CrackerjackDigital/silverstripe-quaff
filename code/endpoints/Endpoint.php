@@ -80,8 +80,8 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 	public function sync() {
 		ob_start();
 
-		$this->debugger(Debugger::DebugTrace)
-			->toFile(Debugger::DebugTrace, $this->getAlias())
+		$this->debugger()
+			->toFile(Debugger::DebugWarn, $this->getAlias())
 			->sendFile('servers+thames@moveforward.co.nz');
 
 		$this->extend('startSync');
@@ -97,7 +97,7 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 				if ($items = $response->getItems()) {
 
 					if ($count = $items->count()) {
-						static::debug_trace("Adding '$count' items");
+						$this->debug_info("Adding '$count' items");
 
 						/** @var Model $model */
 						foreach ($items as $model) {
@@ -105,16 +105,16 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 								$model->write();
 								$written->push($model);
 
-								static::debug_trace($index . ":" . var_dump($model->toMap()));
+								$this->debug_trace($index . ":" . var_dump($model->toMap()));
 
 								$index++;
 
 							} catch (Exception $e) {
-								static::debug_message("Failed to add model: " . $e->getMessage(), Debugger::DebugWarn);
+								$this->debug_error("Failed to add model: " . $e->getMessage());
 							}
 						}
 					} else {
-						static::debug_trace("Finished after '$index' models");
+						static::debug_info("Finished after '$index' models");
 						// no more items
 						break;
 					}
@@ -123,8 +123,11 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 				$this->debug_error("Error syncing model response: " . $response->getResultMessage());
 				break;
 			}
+			if ($response->isComplete()) {
+				// no more to come.
+				break;
+			}
 			ob_flush();
-
 		}
 		$this->extend('endSync', $response, $written);
 		ob_flush();
@@ -146,7 +149,6 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 			$this,
 			$queryParams
 		);
-
 		do {
 			/** @var \Quaff\Responses\Response $response */
 			$response = $transport->get(
@@ -155,7 +157,7 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 			);
 			yield $response;
 
-		} while ($response->isValid());
+		} while ($response->isValid() && !$response->isComplete());
 	}
 
 	/**

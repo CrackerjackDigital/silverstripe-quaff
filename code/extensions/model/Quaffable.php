@@ -35,23 +35,23 @@ class Quaffable extends ModelExtension
 		if ($mapper = Mapper::locate($endpoint->getAcceptType())) {
 
 			// notify the model they're about to be quaffed
-			$this->owner()->extend('beforeQuaff', $endpoint, $mapper, $data);
+			$this()->extend('beforeQuaff', $endpoint, $mapper, $data);
 
-			$result = $mapper->quaff($data, $this->owner(), $endpoint, $options);
+			$result = $mapper->quaff($data, $this(), $endpoint, $options);
 
 			// notify the model they're were quaffed
-			$this->owner()->extend('afterQuaff', $endpoint, $mapper, $data);
+			$this()->extend('afterQuaff', $endpoint, $mapper, $data);
 
 		}
 		return $result;
 	}
 
 	public function toMap() {
-		return $this->owner()->toMap();
+		return $this()->toMap();
 	}
 
 	public function quaffMapForEndpoint(EndpointInterface $endpoint, $options = self::MapDeep) {
-		$maps = $this->owner()->config()->get('quaff_map');
+		$maps = $this()->config()->get('quaff_map');
 		$alias = $endpoint->getAlias();
 
 		if (!isset($maps[$alias])) {
@@ -68,7 +68,7 @@ class Quaffable extends ModelExtension
 			}
 		}
 
-		$this->owner()->extend('quaffUpdateMap', $newMap, $endpoint, $options);
+		$this()->extend('quaffUpdateMap', $newMap, $endpoint, $options);
 		return $newMap;
 	}
 
@@ -126,7 +126,7 @@ class Quaffable extends ModelExtension
 	public function quaffMapValuesToFields(array $values, $prefix = '', $suffix = '') {
 		foreach ($values as $name => $value) {
 			$fieldName = $prefix . $name . $suffix;
-			$this->owner()->$fieldName = $value;
+			$this()->$fieldName = $value;
 		}
 	}
 

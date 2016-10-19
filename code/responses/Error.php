@@ -16,6 +16,10 @@ class Error extends Response {
 		return true;
 	}
 
+	public function isComplete() {
+		return true;
+	}
+
 	public function getItemCount() {
 		return 0;
 	}

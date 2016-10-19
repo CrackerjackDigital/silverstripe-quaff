@@ -4,7 +4,7 @@ namespace Quaff\Interfaces;
 interface Response {
 
 	public function getRawData();
-	
+
 	/**
 	 * Return a response code, e.g. for HTTP this would be the Response Code
 	 * @return mixed
@@ -30,6 +30,12 @@ interface Response {
 	 *      false if something returned (maybe empty though)
 	 */
 	public function isError();
+
+	/**
+	 * Return true if the response has completed (e.g. no more data). An error response is always complete.
+	 * @return bool
+	 */
+	public function isComplete();
 
 	/**
 	 * Return the opposite of isError

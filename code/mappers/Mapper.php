@@ -77,30 +77,6 @@ abstract class Mapper extends Object
 	}
 
 	/**
-	 * Given an array just returns it otherwise returns json_decode's data.
-	 *
-	 * @param $arrayOrString
-	 *
-	 * @return array
-	 */
-	protected function decode(&$arrayOrString) {
-		if (!is_array($arrayOrString)) {
-			return json_decode($arrayOrString, true);
-		} else {
-			return $arrayOrString;
-		}
-	}
-
-	/**
-	 * @param array $data
-	 *
-	 * @return string
-	 */
-	protected function encode(array $data) {
-		return json_encode($data);
-	}
-
-	/**
 	 * A value was found so map it to the DataObject.
 	 *
 	 * @param                           $value
@@ -272,14 +248,14 @@ abstract class Mapper extends Object
 	 * @return bool
 	 */
 	public function match($contentType) {
-		return in_array($contentType, $this->contentTypes());
+		return in_array($contentType, $this->getContentTypes());
 	}
 
 	/**
 	 * Return array of content types this Mapper can map
 	 * @return array
 	 */
-	public function contentTypes() {
+	public function getContentTypes() {
 		return $this->config()->get('content_types') ?: [];
 	}
 
