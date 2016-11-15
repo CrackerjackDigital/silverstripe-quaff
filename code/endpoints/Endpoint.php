@@ -81,8 +81,8 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 		ob_start();
 
 		$this->debugger()
-			->toFile(Debugger::DebugWarn, $this->getAlias())
-			->sendFile('servers+thames@moveforward.co.nz');
+			->toFile($this->getAlias())
+			->sendFile();
 
 		$this->extend('startSync');
 		$this->init();

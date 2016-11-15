@@ -46,9 +46,9 @@ abstract class SyncTask extends BuildTask {
 	 * @throws \Quaff\Exceptions\Exception
 	 */
 	public function run($request) {
-		$this->debugger($this->config()->get('log_level'))
-			->toFile(Debugger::DebugInfo, $this->config()->get('log_file'))
-			->toScreen(Debugger::DebugAll)
+		$this->debugger()
+			->toFile($this->config()->get('log_file'))
+			->toScreen()
 			->sendFile($this->config()->get('log_email'));
 
 		if ($this->enabled()) {
