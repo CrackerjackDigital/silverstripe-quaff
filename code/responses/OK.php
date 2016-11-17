@@ -10,7 +10,7 @@ use Quaff\Interfaces\Reader;
 use Quaff\Interfaces\Transport;
 use Quaff\Mappers\AssociativeArray;
 
-abstract class OK extends Response {
+abstract class OK extends Response implements \ArrayAccess {
 
 	/**
 	 * Return the items returned by the request as a list.
@@ -113,26 +113,28 @@ abstract class OK extends Response {
 	 * Return immediate data in first 'tier' of returned data without traversing a path, quicker than traverse.
 	 *
 	 * @param $key
-	 * @return array
+	 * @return mixed
 	 */
 	public function data($key = null) {
-		if (func_num_args()) {
-			return array_key_exists($key, $this->buffer ?: []) ? $this->buffer[ $key ] : null;
-		}
-		return $this->buffer;
-	}
-
-	/**
-	 * Return all the data from the buffer in one chunk.
-	 *
-	 * @return string
-	 */
-	public function getRawData() {
-		$data = '';
-		while ($buff = $this->read()) {
-			$data .= $buff;
+		if ($data = $this->getRawData()) {
+			if (!is_null($key) && is_array($data) || ($data instanceof \ArrayAccess)) {
+				if (isset($data[$key])) {
+					return $data[$key];
+				}
+				return null;
+			}
 		}
 		return $data;
+	}
+	
+	/**
+	 * Return all the data from the buffer.
+	 *
+	 * @param null $responseCode
+	 * @return string
+	 */
+	public function getRawData(&$responseCode = null) {
+		return $this->getBuffer()->readAll($responseCode);
 	}
 
 
