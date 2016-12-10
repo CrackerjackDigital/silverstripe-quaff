@@ -210,7 +210,7 @@ class Endpoint extends Object implements EndpointInterface, LocatorInterface {
 	 *
 	 * @param  string $alias whatever is needed by the locator to find the target.
 	 * @param array   $moreMeta
-	 * @return \Generator yields instance of class being called which matches test criteria
+	 * @return \Quaff\Interfaces\Endpoint yields instance of class being called which matches test criteria
 	 */
 	public static function locate($alias, array $moreMeta = []) {
 		foreach (Endpoint::subclasses() as $namespaced => $className) {
