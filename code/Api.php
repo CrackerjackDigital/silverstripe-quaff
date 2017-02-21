@@ -23,23 +23,23 @@ abstract class Api extends Object
 	use debugging;
 
 	/** @var string provide in concrete api implementation as it is the name by which this api can be located by */
-	private static $service = '';
+	private static $alias = '';
 
 	/** @var string use this accept type with requests if none defined in the info */
-	private static $accept_type = 'application/json';
+	private static $accept_type = ''; # 'application/json';
 
 	/** @var string the name of a QuaffAuth derived class */
 	private static $auth_provider = 'QuaffAuthTypeBasic';
 
 	/** @var string the name of a QuaffTransport derived class */
-	private static $transport = 'Quaff\Transports\Guzzle';
-
-	/** @var string set this to log to this file under assets directory, e.g. 'logs/quaff-shuttlerock.log' */
-	private static $log_path_name = '';
+	private static $transport = ''; # 'Quaff\Transports\Guzzle';
 
 	/** @var string set this to log errors to this file under assets directory, e.g. 'logs/quaff-shuttlerock-errors.log' */
-	private static $error_log_path_name = '';
-
+	private static $log_path = '';
+	
+	/** @var string set this to log to this file under assets directory, e.g. 'logs/quaff-shuttlerock.log' */
+	private static $log_file = '';
+	
 	/** @var string set this to send error emails to this address when self.error is called */
 	private static $error_log_email_address = '';
 
@@ -85,18 +85,13 @@ abstract class Api extends Object
 
 	/**
 	 *
-	 * Find and return an api implementation for a service.
+	 * Find and yield api implementations matching a given alias
 	 *
-	 * @param mixed $service e.g. 'arlo' or 'shuttlerock'
+	 * @param mixed $alias e.g. 'arlo' or 'shuttlerock'
 	 * @return \Generator yields Apis which match requested service (may be more than one)
 	 *
 	 */
-	public static function locate($service) {
-		$api = static::cache($service);
-
-		if ($api) {
-			yield $api;
-		}
+	public static function locate($alias) {
 		/** @var EndpointInterface $className */
 		foreach (ClassInfo::subclassesFor('Quaff\\Api') as $className) {
 			if ($className == 'Quaff\\Api') {
@@ -104,8 +99,7 @@ abstract class Api extends Object
 			}
 			/** @var LocatorInterface $api */
 			if ($api = Injector::inst()->get($className)) {
-				if ($api->match($service)) {
-					static::cache($service, $api);
+				if ($api->match($alias)) {
 					yield $api;
 				}
 			}
@@ -119,7 +113,7 @@ abstract class Api extends Object
 	 * @return array|bool info if endpoint is found, otherwise false.
 	 */
 	public function match($test) {
-		return $this->service() == $test;
+		return $this->alias() == $test;
 	}
 
 	/**
@@ -127,40 +121,44 @@ abstract class Api extends Object
 	 *
 	 * @return string
 	 */
-	public function service() {
-		return $this->config()->get('service');
+	public function alias() {
+		return $this->config()->get('alias');
 	}
 
 	/**
 	 *
-	 * @param array $endpointPaths
+	 * @param array|string $endpointAliases list of endpoint aliases to sync
 	 * @return \Quaff\Responses\Response|void
 	 * @throws \Quaff\Exceptions\Exception
 	 */
-	public static function sync(array $endpointPaths) {
+	public static function sync($endpointAliases = []) {
+		$endpointAliases = $endpointAliases ?: static::endpoints();
+		if (!is_array($endpointAliases)) {
+			$endpointAliases = array_filter([ $endpointAliases ]);
+		}
 
-		static::debug_info('Starting sync');
+		static::debug_info('Starting sync of endpoints '. implode(',', $endpointAliases));
 
 		if (!\Director::is_cli()) {
 			ob_start('nl2br');
 		}
 		$endpoints = [];
 		// first gather all the endpoints passed or from config and assembled the 'active' ones
-		foreach ($endpointPaths as $endpointPath => $active) {
+		foreach ($endpointAliases as $alias => $active) {
 			// this could be an array of endpoints to sync or a map of [ endpoint path => truthish to sync ]
-			$doSync = is_numeric($endpointPath) ? true : $active;
-			$endpointPath = is_numeric($endpointPath) ? $active : $endpointPath;
+			$doSync = is_numeric($alias) ? true : $active;
+			$alias = is_numeric($alias) ? $active : $alias;
 
 			if ($doSync) {
 				/** @var EndpointInterface $endpoint */
-				if ($endpoint = static::endpoint($endpointPath)) {
-					$endpoints[ $endpointPath ] = $endpoint;
+				if ($endpoint = static::endpoint($alias)) {
+					$endpoints[ $alias ] = $endpoint;
 				}
 			}
 		}
 		// now get the found endpoints to sync themselves
 		/** @var EndpointInterface $endpoint */
-		foreach ($endpoints as $endpointPath => $endpoint) {
+		foreach ($endpoints as $alias => $endpoint) {
 			if ($endpoint->sync()) {
 
 			}
@@ -180,12 +178,13 @@ abstract class Api extends Object
 	public static function endpoints() {
 		return static::config()->get('endpoints') ?: [];
 	}
-
+	
 	/**
 	 * Return a configured endpoint.
 	 *
 	 * @param string $alias
-	 * @return EndpointInterface
+	 * @param array  $moreMeta passed to endpoint constructor in locator
+	 * @return \Quaff\Interfaces\Endpoint
 	 */
 	public static function endpoint($alias, array $moreMeta = []) {
 		return Endpoint::locate($alias, $moreMeta);

@@ -2,5 +2,5 @@
 namespace Quaff\Interfaces;
 
 interface Reader {
-	public function read(&$responseCode);
+	public function read(&$responseCode = null);
 }

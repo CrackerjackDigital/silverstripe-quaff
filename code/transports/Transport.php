@@ -214,6 +214,15 @@ abstract class Transport extends Object implements TransportInterface {
 	public function getOptions() {
 		return $this->options;
 	}
+	
+	public static function is_ok($responseCode) {
+		return static::match_response_code($responseCode, self::ResponseDecodeOK);
+	}
+	
+	public static function is_error($responseCode) {
+		return !static::is_ok($responseCode);
+			
+	}
 
 	/**
 	 * Encapsulate the raw data from the transport into a Quaff Response, which may be a ErrorResponse if we got an
@@ -224,7 +233,7 @@ abstract class Transport extends Object implements TransportInterface {
 	 * @param          $resultCode
 	 * @param Buffer   $buffer
 	 * @param          $metaData
-	 * @return \Quaff\Responses\Response
+	 * @return \Quaff\Interfaces\Response
 	 */
 	public static function make_response(Endpoint $endpoint, $resultCode, Buffer $buffer, array $metaData = []) {
 		if (static::match_response_code($resultCode, self::response_decode_ok())) {
@@ -248,7 +257,29 @@ abstract class Transport extends Object implements TransportInterface {
 			)
 		);
 	}
-
+	
+	/**
+	 * Check if a returned response code (e.g. 200) matches the expectation (e.g. DecodeResponseOK)
+	 *
+	 * @param mixed      $fromCode
+	 * @param int|string $toExpected a success or failure value (s.g. self::response_decode_ok())
+	 * @return bool true response code matches expected, false otherwise
+	 *
+	 */
+	public static function match_response_code($fromCode, $toExpected) {
+		$decode = static::response_code_decodes();
+		foreach ($decode as $pattern => $result) {
+			if (fnmatch($pattern, $fromCode)) {
+				if ($result === $toExpected) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	
+	
 	/**
 	 * Given a local path or a uri return a local path within the web site root folder or the uri.
 	 *
@@ -305,31 +336,12 @@ abstract class Transport extends Object implements TransportInterface {
 	}
 
 	/**
-	 * Check if a returned response code (e.g. 200) matches the expectation (e.g. DecodeResponseOK)
-	 *
-	 * @param mixed      $fromCode
-	 * @param int|string $toExpected a success or failure value (s.g. self::response_decode_ok())
-	 * @return bool true response code matches expected, false otherwise
-	 *
-	 */
-	protected static function match_response_code($fromCode, $toExpected = self::ResponseDecodeOK) {
-		$decode = static::response_code_decodes();
-		foreach ($decode as $pattern => $result) {
-			if (fnmatch($pattern, $fromCode)) {
-				if ($result === $toExpected) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Return a map of codes to error/success conditions (wildcards allowed).
+	 * Return a map of codes to error/success conditions (wildcards allowed). This will always have the
+	 * configured OK and Error responses first mappting to suitable Transport values which can be tested.
 	 *
 	 * @return array
 	 */
-	public static function response_code_decodes() {
+	protected static function response_code_decodes() {
 		return array_merge(
 			[
 				static::response_decode_ok() => Transport::ResponseDecodeOK,

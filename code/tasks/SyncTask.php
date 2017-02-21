@@ -15,7 +15,7 @@ abstract class SyncTask extends BuildTask {
 	use enabler;
 	use debugging;
 
-	// name of Api service as Injector see's it, e.g 'shuttlerock'
+	// aliaa of Api service as api locator see's it, e.g 'shuttlerock'
 	const ApiServiceAlias = '';
 
 	// aliases of endpoints to sync on the Api service
@@ -47,20 +47,24 @@ abstract class SyncTask extends BuildTask {
 	 */
 	public function run($request) {
 		$this->debugger()
-			->toFile($this->config()->get('log_file'))
+			->toFile()
 			->toScreen()
-			->sendFile($this->config()->get('log_email'));
+			->sendFile();
 
 		if ($this->enabled()) {
 			/** @var Api $api */
 			foreach (Api::locate(static::ApiServiceAlias) as $api) {
-				$api::sync($this->config()->get('endpoints'));
+				$api::sync($this->endpoints());
 			}
 
 
 		} else {
 			$this->debug_warn('disabled');
 		}
+	}
+	
+	public function endpoints() {
+		return $this->config()->get('endpoints') ?: [];
 	}
 
 

@@ -50,7 +50,7 @@ interface Endpoint {
 	 *
 	 * @param      $apiData
 	 * @param null $flags
-	 * @return \Modular\Model
+	 * @return \Modular\Model|\Quaff\Interfaces\Mapper
 	 */
 	public function createEmptyModel($apiData, $flags = null);
 

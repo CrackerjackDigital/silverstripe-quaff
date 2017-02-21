@@ -22,7 +22,14 @@ interface Buffer extends \Iterator {
 	 * @param $responseCode
 	 * @return mixed
 	 */
-	public function read(&$responseCode);
+	public function read(&$responseCode = null);
+	
+	/**
+	 * Return everything from the buffer.
+	 * @param $responseCode
+	 * @return mixed
+	 */
+	public function readAll(&$responseCode = null);
 
 	/**
 	 * Open a uri for a particular action (e.g. Transport::ActionRead). Return meta-data about it if possible.
