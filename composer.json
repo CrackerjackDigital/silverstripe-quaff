@@ -27,7 +27,7 @@
 	"repositories": [
 		{
 			"type": "vcs",
-			"url": "https://github.com/crackerjackdigital/modular"
+			"url": "https://github.com/crackerjackdigital/silverstripe-modular"
 		}
 	]
 }

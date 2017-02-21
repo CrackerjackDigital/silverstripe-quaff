@@ -3,7 +3,7 @@ Name: quaff-config
 ---
 Injector:
   QuaffMapper:
-    class: Quaff\Mappers\ArrayMapper
+    class: Quaff\Mappers\AssociativeArray
 Quaff\Tasks\SyncTask:
   enabled: true
 

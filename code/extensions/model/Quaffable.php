@@ -7,15 +7,17 @@ namespace Quaff\Extensions\Model;
 use Modular\bitfield;
 use Modular\config;
 use Modular\ModelExtension;
-use Quaff\Endpoints\Endpoint;
+use Modular\owned;
 use Quaff\Interfaces\Endpoint as EndpointInterface;
 use Quaff\Interfaces\Quaffable as QuaffableInterface;
+use Quaff\Exceptions\Mapping as Exception;
 use Quaff\Mappers\Mapper;
 
 class Quaffable extends ModelExtension
 	implements QuaffableInterface {
 	use config;
 	use bitfield;
+	use owned;
 
 	/**
 	 * Import from $data into object for the $endpoint, does not write the model.
@@ -28,43 +30,35 @@ class Quaffable extends ModelExtension
 	public function quaff(EndpointInterface $endpoint, $data, $options = self::DefaultQuaffOptions) {
 		$result = null;
 
+		// find mapper which handles the endpoints accept type
 		/** @var Mapper $mapper */
-		if ($mapper = Mapper::locate($endpoint)) {
+		if ($mapper = Mapper::locate($endpoint->getAcceptType())) {
 
 			// notify the model they're about to be quaffed
-			$this->owner()->extend('beforeQuaff', $endpoint, $mapper, $data);
+			$this()->extend('beforeQuaff', $endpoint, $mapper, $data);
 
-			$result = $mapper->quaff($data, $this->owner(), $endpoint, $options);
+			$result = $mapper->quaff($data, $this(), $endpoint, $options);
 
 			// notify the model they're were quaffed
-			$this->owner()->extend('afterQuaff', $endpoint, $mapper, $data);
+			$this()->extend('afterQuaff', $endpoint, $mapper, $data);
 
 		}
 		return $result;
 	}
 
-	/**
-	 * @return Model
-	 */
-	public function owner() {
-		return $this->owner;
-	}
-
 	public function toMap() {
-		return $this->owner()->toMap();
+		return $this()->toMap();
 	}
 
 	public function quaffMapForEndpoint(EndpointInterface $endpoint, $options = self::MapDeep) {
-		$maps = $this->owner()->config()->get('quaff_map');
-		$path = $endpoint->getPath();
-		$map = [];
+		$maps = $this()->config()->get('quaff_map');
+		$alias = $endpoint->getAlias();
 
-		foreach ($maps as $match => $map) {
-			if (Endpoint::match($match, $path)) {
-				break;
-			}
-			$map = [];
+		if (!isset($maps[$alias])) {
+			throw new Exception("No map for endpoint '$alias'");
 		}
+		$map = $maps[$alias];
+
 		$newMap = [];
 
 		if ($map) {
@@ -74,7 +68,7 @@ class Quaffable extends ModelExtension
 			}
 		}
 
-		$this->owner()->extend('quaffUpdateMap', $newMap, $endpoint, $options);
+		$this()->extend('quaffUpdateMap', $newMap, $endpoint, $options);
 		return $newMap;
 	}
 
@@ -132,7 +126,7 @@ class Quaffable extends ModelExtension
 	public function quaffMapValuesToFields(array $values, $prefix = '', $suffix = '') {
 		foreach ($values as $name => $value) {
 			$fieldName = $prefix . $name . $suffix;
-			$this->owner()->$fieldName = $value;
+			$this()->$fieldName = $value;
 		}
 	}
 

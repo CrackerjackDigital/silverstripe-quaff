@@ -1,10 +1,6 @@
 <?php
 namespace Quaff\Interfaces;
 
-use Modular\Model;
-use Psr\Http\Message\ResponseInterface;
-use Quaff\Responses\Response;
-
 interface Endpoint {
 
 	/**
@@ -17,7 +13,7 @@ interface Endpoint {
 	/**
 	 * Calls remote uri and creates models in database.
 	 *
-	 * @return mixed
+	 * @return bool return true if success, false if failed
 	 */
 	public function sync();
 
@@ -30,19 +26,15 @@ interface Endpoint {
 
 	public function version();
 
-	public function info($key);
+	public function meta($key);
 
 	public function auth();
 
 	/**
-	 * Match this endpoints path/info against another endpoint to see if they are the same or
-	 * this one handles the one passed (e.g. as a requested endpoint).
-	 *
-	 * @param $pattern
-	 * @param $to
+	 * Return the first part of the alies, e.g. 'list' for 'list:entries'
 	 * @return mixed
 	 */
-	public static function match($pattern, $to);
+	public function method();
 
 	/**
 	 * Find an existing model of the type this endpoint returns which matches the provided raw api response data.
@@ -73,7 +65,7 @@ interface Endpoint {
 	 *
 	 * @return mixed
 	 */
-	public function getInfo();
+	public function getMetaData();
 
 	/**
 	 * Return the path to the item collection in the return data, e.g. 'response.items' or '/response/items' for json and xml respectively.
@@ -85,24 +77,43 @@ interface Endpoint {
 	/**
 	 * Return the class name of the 'root' model returned by this endpoint.
 	 *
-	 * @return mixed
+	 * @return string
 	 */
 	public function getModelClass();
 
+	/**
+	 * @return string
+	 */
 	public function getResponseClass();
 
+	/**
+	 * @return string
+	 */
 	public function getErrorClass();
 
 	/**
-	 * @return mixed
+	 * @return string
 	 */
 	public function getEndpointClass();
 
+	/**
+	 * @return string
+	 */
 	public function getTransportClass();
 
-	public function getBaseURL();
+	/**
+	 * Return a complete built URI for a request
+	 *
+	 * @param string $action e.g. Transport::ActionRead
+	 * @return string
+	 */
+	public function getURI($action);
 
-	public function getPath();
+	/**
+	 * Returns the endpoint 'alias', such as 'list:entries'
+	 * @return string
+	 */
+	public function getAlias();
 
 	/**
 	 * @return string lowercase acceptType e.g. application/json

@@ -24,19 +24,11 @@ interface Mapper {
 	const DefaultTagDelimiter = '|';
 
 	/**
-	 * Locate a suitable mapper for this endpoint.
-	 *
-	 * @param Endpoint $endpoint
-	 * @return Mapper
-	 */
-	public static function locate(Endpoint $endpoint);
-
-	/**
 	 * Return an array of contentTypes this mapper handles.
 	 *
 	 * @return array
 	 */
-	public function contentTypes();
+	public function getContentTypes();
 
 	/**
 	 * @param array      $fromData
