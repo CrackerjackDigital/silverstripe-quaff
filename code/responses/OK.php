@@ -1,5 +1,4 @@
 <?php
-
 namespace Quaff\Responses;
 
 use Quaff\Exceptions\Response as Exception;
@@ -10,7 +9,7 @@ use Quaff\Mappers\ArrayMapper;
 class OK extends Response {
 
 	public function getVersion() {
-		return $this->meta( 'Version' );
+		return $this->meta('Version');
 	}
 
 	public function isError() {
@@ -18,11 +17,11 @@ class OK extends Response {
 	}
 
 	public function getItemCount() {
-		return $this->meta( 'ItemCount' );
+		return $this->meta('ItemCount');
 	}
 
 	public function getStartIndex() {
-		return $this->meta( 'StartIndex' );
+		return $this->meta('StartIndex');
 	}
 
 	public function getResultMessage() {
@@ -33,13 +32,10 @@ class OK extends Response {
 	 * Return the items returned by the request as a list.
 	 *
 	 * @param int $options
-	 *
 	 * @return \SS_List
-	 * @throws \Modular\Exceptions\NotImplemented
-	 * @throws \Quaff\Exceptions\Response
 	 */
-	public function getItems( $options = Mapper::DefaultOptions ) {
-		return $this->items( $options );
+	public function getItems($options = Mapper::DefaultOptions) {
+		return $this->items($options);
 	}
 
 	/**
@@ -49,63 +45,38 @@ class OK extends Response {
 	 * updated from the item data via their 'quaff' method.
 	 *
 	 * @param  array|int $options
-	 *
 	 * @return \ArrayList
 	 * @throws \Modular\Exceptions\NotImplemented
 	 * @throws \Quaff\Exceptions\Response
 	 */
-	protected function items( $options = null ) {
+	protected function items($options = null) {
 		$models = new \ArrayList();
 
-		if ( $this->isValid() ) {
+		if ($this->isValid()) {
 			$contentType = $this->getContentType();
 
-			if ( $type = static::decode_content_type( $contentType ) ) {
-				$items = $this->$type( $options );
+			if ($type = static::decode_content_type($contentType)) {
+				$items = $this->$type($options);
 			} else {
-				throw new Exception( "Bad content type '$contentType'" );
+				throw new Exception("Bad content type '$contentType'");
 			}
 			$endpoint = $this->getEndpoint();
 
-			$model = $this->createEmptyModel( [] );
-
-			$itemKeyField  = '';
-			$modelKeyField = 'Title';
-
-			if ( $model->hasMethod( 'quaffKeyFields' ) ) {
-				if ( $keyFields = $model->quaffKeyFields() ) {
-					list( $itemKeyField, $modelKeyField ) = $keyFields;
-				}
-			}
-			if (!$itemKeyField) {
-				throw new Exception("You need to declare quaffKeyFields on your model or extension, see Mapper interface");
-			}
-
-			foreach ( $items as $item ) {
-				if ( $itemKeyField && $modelKeyField && $models->find( $modelKeyField, $item[ $itemKeyField ] ) ) {
-					// skip those we've already added to the list incase we're getting duplicates back
-					continue;
-				}
+			foreach ($items as $item) {
 				/** @var Quaffable $model */
-				if ( ! $model = $this->findModel( $item, $options ) ) {
-					if ( ! $model = $this->createEmptyModel( $item, $options ) ) {
+				if (!$model = $this->findModel($item, $options)) {
 
-						$this->debug_error( "Failed to create model" );
+					if (!$model = $this->createEmptyModel($item, $options)) {
+
+						$this->debug_error("Failed to locate model");
 						continue;
 
 					}
 				}
-				$model->quaff( $endpoint, $item, $options );
-
-				if ($model->isInDB()) {
-					$this->debug_info( "found model for key '$model->$modelKeyField'" );
-				} else {
-					$this->debug_info( "created model for key '$model->$modelKeyField'" );
-				}
-				$models->push( $model );
+				$model->quaff($endpoint, $item, $options);
+				$models->push($model);
 			}
 		}
-
 		return $models;
 	}
 
@@ -116,20 +87,19 @@ class OK extends Response {
 	 * @throws Exception
 	 */
 	protected function json() {
-		if ( is_null( $json = json_decode( $this->rawData, $this->get_config_setting( 'decode_options', self::ContentTypeJSON ) ) ) ) {
+		if (is_null($json = json_decode($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeJSON)))) {
 			$message = "Failed to load json from response raw data";
-			if ( $error = json_last_error() ) {
+			if ($error = json_last_error()) {
 				$message .= ": '$error'";
 			}
-			throw new Exception( $message );
+			throw new Exception($message);
 		}
-		if ( $itemPath = $this->endpoint->getItemPath() ) {
-			$value = ArrayMapper::traverse( $itemPath, $json, $found );
+		if ($itemPath = $this->endpoint->getItemPath()) {
+			$value = ArrayMapper::traverse($itemPath, $json, $found);
 
-			if ( ! $found ) {
-				throw new Exception( "Items node '$itemPath' not found in response" );
+			if (!$found) {
+				throw new Exception("Items node '$itemPath' not found in response");
 			}
-
 			return $value;
 		} else {
 			return $json;
@@ -143,23 +113,23 @@ class OK extends Response {
 	 * @throws Exception
 	 */
 	protected function xml() {
-		libxml_use_internal_errors( true );
+		libxml_use_internal_errors(true);
 		libxml_clear_errors();
 
 		$doc = new \DOMDocument();
-		if ( ! $doc->loadXML( $this->rawData, $this->get_config_setting( 'decode_options', self::ContentTypeXML ) ) ) {
+		if (!$doc->loadXML($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeXML))) {
 
 			$message = "Failed to load document from response raw data";
-			if ( $error = libxml_get_last_error() ) {
+			if ($error = libxml_get_last_error()) {
 				$message .= ": '$error'";
 			}
-			throw new Exception( $message );
+			throw new Exception($message);
 		}
-		$xpath = new \DOMXPath( $doc );
-		if ( $itemPath = $this->endpoint->getItemPath() ) {
-			return $xpath->query( $itemPath );
+		$xpath = new \DOMXPath($doc);
+		if ($itemPath = $this->endpoint->getItemPath()) {
+			return $xpath->query($itemPath);
 		} else {
-			return $xpath->query( '/' );
+			return $xpath->query('/');
 		}
 	}
 
@@ -170,23 +140,23 @@ class OK extends Response {
 	 * @throws Exception
 	 */
 	protected function html() {
-		libxml_use_internal_errors( true );
+		libxml_use_internal_errors(true);
 		libxml_clear_errors();
 
 		$doc = new \DOMDocument();
-		if ( ! $doc->loadHTML( $this->rawData, $this->get_config_setting( 'decode_options', self::ContentTypeHTML ) ) ) {
+		if (!$doc->loadHTML($this->rawData, $this->get_config_setting('decode_options', self::ContentTypeHTML))) {
 			$message = "Failed to load document from response raw data";
 
-			if ( $error = libxml_get_last_error() ) {
+			if ($error = libxml_get_last_error()) {
 				$message .= ": '$error'";
 			}
-			throw new Exception( $message );
+			throw new Exception($message);
 		}
-		$xpath = new \DOMXPath( $doc );
-		if ( $itemPath = $this->endpoint->getItemPath() ) {
-			return $xpath->query( $itemPath );
+		$xpath = new \DOMXPath($doc);
+		if ($itemPath = $this->endpoint->getItemPath()) {
+			return $xpath->query($itemPath);
 		} else {
-			return $xpath->query( '/' );
+			return $xpath->query('/');
 		}
 	}
 
@@ -196,12 +166,11 @@ class OK extends Response {
 	 *
 	 * @param array $data
 	 * @param       $flags
-	 *
 	 * @return \DataObject|null
 	 * @throws \Modular\Exceptions\NotImplemented
 	 */
-	protected function findModel( $data, $flags = null ) {
-		return $this->getEndpoint()->findModel( $data, $flags );
+	protected function findModel($data, $flags = null) {
+		return $this->getEndpoint()->findModel($data, $flags);
 	}
 
 	/**
@@ -209,25 +178,22 @@ class OK extends Response {
 	 *
 	 * @param array $data
 	 * @param int   $flags
-	 *
 	 * @return \Quaff\Interfaces\Mapper
 	 */
-	protected function createEmptyModel( $data, $flags = null ) {
-		return $this->getEndpoint()->createEmptyModel( $data, $flags );
+	protected function createEmptyModel($data, $flags = null) {
+		return $this->getEndpoint()->createEmptyModel($data, $flags);
 	}
 
 	/**
 	 * Return immediate data in first 'tier' of returned data without traversing a path, quicker than traverse.
 	 *
 	 * @param $key
-	 *
 	 * @return array
 	 */
-	public function data( $key = null ) {
-		if ( func_num_args() ) {
-			return array_key_exists( $key, $this->rawData ?: [] ) ? $this->rawData[ $key ] : null;
+	public function data($key = null) {
+		if (func_num_args()) {
+			return array_key_exists($key, $this->rawData ?: []) ? $this->rawData[ $key ] : null;
 		}
-
 		return $this->rawData;
 	}
 
@@ -245,25 +211,23 @@ class OK extends Response {
 	 * content type starting from the first character in lower-case.
 	 *
 	 * @param string|array $contentTypes we are looking to decode, could be an array if multiple content types were returned
-	 *
 	 * @return int|null the ContentTypeACB constant for the string content type or null if not found
 	 */
-	protected static function decode_content_type( $contentTypes ) {
+	protected static function decode_content_type($contentTypes) {
 		// convert to array if string so can handle the same
-		$contentTypes = is_array( $contentTypes ) ? $contentTypes : [ $contentTypes ];
+		$contentTypes = is_array($contentTypes) ? $contentTypes : [$contentTypes];
 
-		$expectedTypes = static::config()->get( 'content_types' );
+		$expectedTypes = static::config()->get('content_types');
 
-		foreach ( $contentTypes as $contentType ) {
-			foreach ( $expectedTypes as $expectedType => $signatures ) {
-				foreach ( $signatures as $signature ) {
-					if ( 0 === strpos( strtolower( $contentType ), strtolower( $signature ) ) ) {
+		foreach ($contentTypes as $contentType) {
+			foreach ($expectedTypes as $expectedType => $signatures) {
+				foreach ($signatures as $signature) {
+					if (0 === strpos(strtolower($contentType), strtolower($signature))) {
 						return $expectedType;
 					}
 				}
 			}
 		}
-
 		return null;
 	}
 
@@ -272,33 +236,29 @@ class OK extends Response {
 	 * Whether a offset exists
 	 *
 	 * @link http://php.net/manual/en/arrayaccess.offsetexists.php
-	 *
 	 * @param mixed $offset <p>
 	 *                      An offset to check for.
 	 *                      </p>
-	 *
 	 * @return boolean true on success or false on failure.
 	 *                      </p>
 	 *                      <p>
 	 *                      The return value will be casted to boolean if non-boolean was returned.
 	 */
-	public function offsetExists( $offset ) {
-		return is_array( $this->rawData ) && array_key_exists( $offset, $this->rawData );
+	public function offsetExists($offset) {
+		return is_array($this->rawData) && array_key_exists($offset, $this->rawData);
 	}
 
 	/**
 	 * ArrayAccess implementation
 	 *
 	 * @param mixed $offset
-	 *
 	 * @return mixed
 	 * @throws Exception
 	 */
-	public function offsetGet( $offset ) {
-		if ( ! $this->offsetExists( $offset ) ) {
-			throw new Exception( "Invalid key '$offset'" );
+	public function offsetGet($offset) {
+		if (!$this->offsetExists($offset)) {
+			throw new Exception("Invalid key '$offset'");
 		}
-
 		return $this->rawData[ $offset ];
 	}
 
@@ -308,7 +268,7 @@ class OK extends Response {
 	 * @param mixed $offset
 	 * @param mixed $value
 	 */
-	public function offsetSet( $offset, $value ) {
+	public function offsetSet($offset, $value) {
 		$this->rawData[ $offset ] = $value;
 	}
 
@@ -317,16 +277,14 @@ class OK extends Response {
 	 * Offset to unset
 	 *
 	 * @link http://php.net/manual/en/arrayaccess.offsetunset.php
-	 *
 	 * @param mixed $offset <p>
 	 *                      The offset to unset.
 	 *                      </p>
-	 *
 	 * @return void
 	 */
-	public function offsetUnset( $offset ) {
-		if ( $this->offsetExists( $offset ) ) {
-			unset( $this->rawData[ $offset ] );
+	public function offsetUnset($offset) {
+		if ($this->offsetExists($offset)) {
+			unset($this->rawData[ $offset ]);
 		}
 	}
 

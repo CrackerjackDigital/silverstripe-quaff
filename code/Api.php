@@ -147,6 +147,7 @@ abstract class Api extends Object
 		// now get the endpoints to sync themselves
 		/** @var EndpointInterface $endpoint */
 		foreach ($endpoints as $endpointPath => $endpoint) {
+
 			$endpoint->sync();
 		}
 		if (!Director::is_cli()) {
@@ -195,9 +196,7 @@ abstract class Api extends Object
 	 * Return a configured endpoint.
 	 *
 	 * @param string $path
-	 *
-	 * @return \Quaff\Interfaces\Endpoint
-	 * @throws \Quaff\Exceptions\Exception
+	 * @return EndpointInterface
 	 */
 	public static function endpoint($path) {
 		foreach (static::endpoints() as $testPath => $config) {
@@ -276,9 +275,7 @@ abstract class Api extends Object
 	 * @param array $config
 	 *
 	 * @param bool  $dereferenceBase
-	 *
 	 * @return array
-	 * @throws \Quaff\Exceptions\Exception
 	 */
 	protected static function decode_config(array $config, $dereferenceBase = false) {
 		$merged = [

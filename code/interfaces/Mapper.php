@@ -39,12 +39,6 @@ interface Mapper {
 	public function contentTypes();
 
 	/**
-	 * Return the names of the field used to uniquely identify this model from the source.
-	 * @return array [ incoming-field, model-field ]
-	 */
-	public function quaffKeyFields();
-
-	/**
 	 * @param array      $fromData
 	 * @param DataObject $toModel
 	 * @param Endpoint   $endpoint

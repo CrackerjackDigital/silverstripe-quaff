@@ -99,13 +99,13 @@ abstract class Mapper extends Object
 	/**
 	 * A value was found so map it to the DataObject.
 	 *
-	 * @param                      $value
-	 * @param DataObject|Quaffable $toModel
-	 * @param                      $fieldInfo
-	 * @param int                  $options bitfield of or'd self::OptionXYZ flags
-	 *
-	 * @throws \LogicException
-	 * @throws \ValidationException
+	 * @param                           $value
+	 * @param DataObject|Quaffable      $toModel
+	 * @param                           $fieldInfo
+	 * @param  int                      $options bitfield of or'd self::OptionXYZ flags
+	 * @throws Mapping
+	 * @throws ValidationException
+	 * @throws null
 	 */
 	protected function found($value, DataObject $toModel, $fieldInfo, $options = self::DefaultOptions) {
 		list($dataPath, $modelPath, , $isTagField, $method, $relationship) = $fieldInfo;

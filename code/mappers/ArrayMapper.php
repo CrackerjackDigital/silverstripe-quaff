@@ -12,10 +12,6 @@ class ArrayMapper extends Mapper {
 		'application/json'
 	];
 
-	public function quaffKeyFields() {
-		return [];
-	}
-
 	/**
 	 * Returns an array build as a nested structure mapping flat values in the array or DataObject passed
 	 * to a nested array structure using the provided fieldMap (essentially the reveres of
