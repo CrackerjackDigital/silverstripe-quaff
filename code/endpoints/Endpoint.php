@@ -61,10 +61,6 @@ abstract class Endpoint extends Object implements EndpointInterface {
 	public function sync() {
 		ob_start();
 
-		$this->debugger(Debugger::DebugTrace)
-			->toFile(Debugger::DebugTrace, '../logs/shuttlerock-sync.log')
-			->sendFile('servers+fbu@moveforward.co.nz');
-
 		$this->extend('startSync');
 		$this->init();
 
