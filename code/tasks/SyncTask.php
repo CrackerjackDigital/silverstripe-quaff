@@ -19,7 +19,7 @@ abstract class SyncTask extends BuildTask {
 	private static $endpoints = [ 'sync:entries' ];
 
 	// set to SS_Log::INFO = 6 for logging full information, SS_Log::ERR = 3 for just errors.
-	private static $log_level = \SS_Log::INFO;
+	private static $log_level = \SS_Log::ERR;
 
 	private static $log_email = '';
 
